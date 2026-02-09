@@ -1,0 +1,92 @@
+# Docker Compose for Ramadan Fantasy Football
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: ramadan-fantasy-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ramadan_fantasy
+      MYSQL_USER: ${MYSQL_USER:-fantasy_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-fantasy_password}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fantasy-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ramadan-fantasy-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: mysql://${MYSQL_USER:-fantasy_user}:${MYSQL_PASSWORD:-fantasy_password}@mysql:3306/ramadan_fantasy
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+    ports:
+      - "5000:5000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fantasy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ramadan-fantasy-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - fantasy-network
+
+  # Prisma Studio (Development only - remove in production)
+  prisma-studio:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ramadan-fantasy-prisma
+    command: npx prisma studio --port 5555 --browser none
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER:-fantasy_user}:${MYSQL_PASSWORD:-fantasy_password}@mysql:3306/ramadan_fantasy
+    ports:
+      - "5555:5555"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - fantasy-network
+    profiles:
+      - dev
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  fantasy-network:
+    driver: bridge

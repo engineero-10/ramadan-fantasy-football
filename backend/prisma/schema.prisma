@@ -1,0 +1,302 @@
+// Prisma Schema for Ramadan Fantasy Football
+// This is your Prisma schema file for MySQL database
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USER & AUTHENTICATION ====================
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(USER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  leagues       League[]  @relation("LeagueCreator")
+  memberships   LeagueMember[]
+  fantasyTeams  FantasyTeam[]
+  transfers     Transfer[]
+
+  @@index([email])
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+// ==================== LEAGUE MANAGEMENT ====================
+
+model League {
+  id                    Int       @id @default(autoincrement())
+  name                  String
+  description           String?   @db.Text
+  code                  String    @unique
+  maxTeams              Int       @default(10)
+  playersPerTeam        Int       @default(12)
+  startingPlayers       Int       @default(8)
+  substitutes           Int       @default(4)
+  maxPlayersPerRealTeam Int       @default(2)
+  budget                Decimal   @default(100) @db.Decimal(10, 2)
+  maxTransfersPerRound  Int       @default(2)
+  isActive              Boolean   @default(true)
+  createdById           Int
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  createdBy     User          @relation("LeagueCreator", fields: [createdById], references: [id])
+  members       LeagueMember[]
+  teams         Team[]
+  players       Player[]
+  rounds        Round[]
+  fantasyTeams  FantasyTeam[]
+
+  @@index([code])
+  @@index([createdById])
+  @@map("leagues")
+}
+
+model LeagueMember {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  leagueId  Int
+  joinedAt  DateTime  @default(now())
+
+  // Relations
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league    League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, leagueId])
+  @@index([leagueId])
+  @@map("league_members")
+}
+
+// ==================== REAL TEAMS & PLAYERS ====================
+
+model Team {
+  id          Int       @id @default(autoincrement())
+  name        String
+  shortName   String?
+  logo        String?
+  leagueId    Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  league      League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  players     Player[]
+  homeMatches Match[]   @relation("HomeTeam")
+  awayMatches Match[]   @relation("AwayTeam")
+
+  @@unique([name, leagueId])
+  @@index([leagueId])
+  @@map("teams")
+}
+
+model Player {
+  id            Int           @id @default(autoincrement())
+  name          String
+  position      Position
+  price         Decimal       @db.Decimal(10, 2)
+  teamId        Int
+  leagueId      Int
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  team          Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  league        League        @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  matchStats    MatchStat[]
+  fantasyPlayers FantasyPlayer[]
+  transfersIn   Transfer[]    @relation("PlayerIn")
+  transfersOut  Transfer[]    @relation("PlayerOut")
+
+  @@index([teamId])
+  @@index([leagueId])
+  @@index([position])
+  @@map("players")
+}
+
+enum Position {
+  GOALKEEPER
+  DEFENDER
+  MIDFIELDER
+  FORWARD
+}
+
+// ==================== MATCHES & ROUNDS ====================
+
+model Round {
+  id              Int       @id @default(autoincrement())
+  name            String
+  roundNumber     Int
+  leagueId        Int
+  startDate       DateTime
+  endDate         DateTime
+  transfersOpen   Boolean   @default(false)
+  lockTime        DateTime?
+  isCompleted     Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  league          League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  matches         Match[]
+  pointsHistory   PointsHistory[]
+  transfers       Transfer[]
+
+  @@unique([roundNumber, leagueId])
+  @@index([leagueId])
+  @@map("rounds")
+}
+
+model Match {
+  id              Int         @id @default(autoincrement())
+  homeTeamId      Int
+  awayTeamId      Int
+  roundId         Int
+  matchDate       DateTime
+  homeScore       Int?
+  awayScore       Int?
+  status          MatchStatus @default(SCHEDULED)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relations
+  homeTeam        Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
+  awayTeam        Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
+  round           Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  matchStats      MatchStat[]
+
+  @@index([roundId])
+  @@index([homeTeamId])
+  @@index([awayTeamId])
+  @@map("matches")
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+model MatchStat {
+  id              Int       @id @default(autoincrement())
+  playerId        Int
+  matchId         Int
+  minutesPlayed   Int       @default(0)
+  goals           Int       @default(0)
+  assists         Int       @default(0)
+  yellowCards     Int       @default(0)
+  redCards        Int       @default(0)
+  cleanSheet      Boolean   @default(false)
+  penaltySaves    Int       @default(0)
+  points          Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  player          Player    @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  match           Match     @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, matchId])
+  @@index([matchId])
+  @@map("match_stats")
+}
+
+// ==================== FANTASY TEAMS ====================
+
+model FantasyTeam {
+  id              Int       @id @default(autoincrement())
+  name            String
+  userId          Int
+  leagueId        Int
+  totalPoints     Int       @default(0)
+  budget          Decimal   @db.Decimal(10, 2)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  league          League    @relation(fields: [leagueId], references: [id], onDelete: Cascade)
+  players         FantasyPlayer[]
+  pointsHistory   PointsHistory[]
+  transfers       Transfer[]
+
+  @@unique([userId, leagueId])
+  @@index([leagueId])
+  @@map("fantasy_teams")
+}
+
+model FantasyPlayer {
+  id              Int       @id @default(autoincrement())
+  fantasyTeamId   Int
+  playerId        Int
+  isStarter       Boolean   @default(true)
+  position        Int       @default(0) // Position in formation
+  addedAt         DateTime  @default(now())
+
+  // Relations
+  fantasyTeam     FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  player          Player      @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([fantasyTeamId, playerId])
+  @@index([playerId])
+  @@map("fantasy_players")
+}
+
+// ==================== TRANSFERS ====================
+
+model Transfer {
+  id              Int       @id @default(autoincrement())
+  fantasyTeamId   Int
+  userId          Int
+  roundId         Int
+  playerInId      Int
+  playerOutId     Int
+  transferDate    DateTime  @default(now())
+
+  // Relations
+  fantasyTeam     FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  round           Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+  playerIn        Player      @relation("PlayerIn", fields: [playerInId], references: [id])
+  playerOut       Player      @relation("PlayerOut", fields: [playerOutId], references: [id])
+
+  @@index([fantasyTeamId])
+  @@index([roundId])
+  @@map("transfers")
+}
+
+// ==================== POINTS HISTORY ====================
+
+model PointsHistory {
+  id              Int       @id @default(autoincrement())
+  fantasyTeamId   Int
+  roundId         Int
+  points          Int       @default(0)
+  rank            Int?
+  createdAt       DateTime  @default(now())
+
+  // Relations
+  fantasyTeam     FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  round           Round       @relation(fields: [roundId], references: [id], onDelete: Cascade)
+
+  @@unique([fantasyTeamId, roundId])
+  @@index([roundId])
+  @@map("points_history")
+}

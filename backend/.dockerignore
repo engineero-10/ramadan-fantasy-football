@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+
+# Environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage
+*.test.js
+
+# Prisma migrations (copy separately if needed)
+prisma/migrations

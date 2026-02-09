@@ -1,0 +1,25 @@
+# Dependencies
+node_modules
+
+# Build output (will be generated in container)
+build
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.idea
+.vscode
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage
