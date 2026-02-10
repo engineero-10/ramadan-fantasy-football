@@ -53,19 +53,19 @@ const Register = () => {
     <div className="min-h-screen ramadan-gradient flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">⚽</div>
-          <h1 className="text-3xl font-bold text-white">فانتازي رمضان</h1>
-          <p className="text-gray-400 mt-2">انضم إلى المنافسة!</p>
+        <div className="text-center mb-5 sm:mb-8">
+          <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">⚽</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">فانتازي رمضان</h1>
+          <p className="text-gray-400 mt-2 text-sm sm:text-base">انضم إلى المنافسة!</p>
         </div>
 
         {/* Register Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-center mb-6">إنشاء حساب جديد</h2>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-5 sm:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">إنشاء حساب جديد</h2>
           
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 الاسم الكامل
               </label>
               <input
@@ -80,7 +80,7 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 البريد الإلكتروني
               </label>
               <input
@@ -95,7 +95,7 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 كلمة المرور
               </label>
               <input
@@ -110,7 +110,7 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5 sm:mb-2">
                 تأكيد كلمة المرور
               </label>
               <input

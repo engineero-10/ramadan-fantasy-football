@@ -9,11 +9,11 @@ const POSITIONS = [
   { value: 'FORWARD', label: 'مهاجم', icon: '⚽' },
 ];
 
-const ManagePlayers = () => {
+const ManagePlayers = ({ fixedLeagueId }) => {
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [leagues, setLeagues] = useState([]);
-  const [selectedLeague, setSelectedLeague] = useState('');
+  const [selectedLeague, setSelectedLeague] = useState(fixedLeagueId || '');
   const [selectedTeam, setSelectedTeam] = useState('');
   const [positionFilter, setPositionFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
@@ -29,8 +29,13 @@ const ManagePlayers = () => {
   });
 
   useEffect(() => {
-    fetchLeagues();
-  }, []);
+    if (!fixedLeagueId) {
+      fetchLeagues();
+    } else {
+      fetchLeagueData();
+      setSelectedLeague(fixedLeagueId);
+    }
+  }, [fixedLeagueId]);
 
   useEffect(() => {
     if (selectedLeague) {
@@ -39,8 +44,20 @@ const ManagePlayers = () => {
   }, [selectedLeague]);
 
   useEffect(() => {
-    fetchPlayers();
+    if (selectedLeague) {
+      fetchPlayers();
+    }
   }, [selectedLeague, selectedTeam, positionFilter]);
+
+  const fetchLeagueData = async () => {
+    try {
+      const response = await leagueAPI.getById(fixedLeagueId);
+      const league = response.data.league || response.data;
+      setLeagues([league]);
+    } catch (error) {
+      console.error('Error fetching league:', error);
+    }
+  };
 
   const fetchLeagues = async () => {
     try {
@@ -64,10 +81,15 @@ const ManagePlayers = () => {
   };
 
   const fetchPlayers = async () => {
+    if (!selectedLeague) {
+      setPlayers([]);
+      setLoading(false);
+      return;
+    }
+    
     setLoading(true);
     try {
-      const params = { limit: 1000 }; // جلب كل اللاعبين
-      if (selectedLeague) params.leagueId = selectedLeague;
+      const params = { limit: 1000, leagueId: selectedLeague };
       if (selectedTeam) params.teamId = selectedTeam;
       if (positionFilter) params.position = positionFilter;
       
@@ -150,47 +172,49 @@ const ManagePlayers = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold">👤 إدارة اللاعبين</h1>
-          <p className="text-gray-600">إضافة وتعديل لاعبي الفرق</p>
+          <h1 className="text-xl sm:text-2xl font-bold">👤 إدارة اللاعبين</h1>
+          <p className="text-gray-600 text-sm sm:text-base">إضافة وتعديل لاعبي الفرق</p>
         </div>
         <button
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          className="btn-primary"
+          className="btn-primary text-sm sm:text-base"
         >
           ➕ إضافة لاعب
         </button>
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select
-            value={selectedLeague}
-            onChange={(e) => {
-              setSelectedLeague(e.target.value);
-              setSelectedTeam('');
-            }}
-            className="input"
-          >
-            <option value="">كل الدوريات</option>
-            {leagues.map((league) => (
-              <option key={league.id} value={league.id}>
-                {league.name}
-              </option>
-            ))}
-          </select>
+      <div className="card p-3 sm:p-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          {!fixedLeagueId && (
+            <select
+              value={selectedLeague}
+              onChange={(e) => {
+                setSelectedLeague(e.target.value);
+                setSelectedTeam('');
+              }}
+              className="input text-sm sm:text-base"
+            >
+              <option value="">كل الدوريات</option>
+              {leagues.map((league) => (
+                <option key={league.id} value={league.id}>
+                  {league.name}
+                </option>
+              ))}
+            </select>
+          )}
           
           <select
             value={selectedTeam}
             onChange={(e) => setSelectedTeam(e.target.value)}
-            className="input"
+            className="input text-sm sm:text-base"
           >
             <option value="">كل الفرق</option>
             {teams.map((team) => (
@@ -203,7 +227,7 @@ const ManagePlayers = () => {
           <select
             value={positionFilter}
             onChange={(e) => setPositionFilter(e.target.value)}
-            className="input"
+            className="input text-sm sm:text-base"
           >
             <option value="">كل المراكز</option>
             {POSITIONS.map((pos) => (
@@ -217,30 +241,30 @@ const ManagePlayers = () => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input"
+            className="input text-sm sm:text-base"
             placeholder="بحث عن لاعب..."
           />
         </div>
       </div>
 
       {/* Players Table */}
-      <div className="card">
+      <div className="card p-3 sm:p-6">
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin text-4xl">⚙️</div>
+          <div className="text-center py-6 sm:py-8">
+            <div className="animate-spin text-3xl sm:text-4xl">⚙️</div>
           </div>
         ) : filteredPlayers.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div className="overflow-x-auto -mx-3 sm:mx-0">
+            <table className="w-full  text-xs sm:text-sm">
               <thead>
                 <tr className="border-b">
-                  <th className="text-right py-3">اللاعب</th>
-                  <th className="text-center py-3">المركز</th>
-                  <th className="text-center py-3">الفريق</th>
-                  <th className="text-center py-3">السعر</th>
-                  <th className="text-center py-3">الرقم</th>
-                  <th className="text-center py-3">النقاط</th>
-                  <th className="text-center py-3">إجراءات</th>
+                  <th className="text-right py-2 sm:py-3 px-1 sm:px-2">اللاعب</th>
+                  <th className="text-center py-2 sm:py-3 px-1 sm:px-2">المركز</th>
+                  <th className="text-center py-2 sm:py-3 px-1 sm:px-2 hidden sm:table-cell">الفريق</th>
+                  <th className="text-center py-2 sm:py-3 px-1 sm:px-2">السعر</th>
+                  <th className="text-center py-2 sm:py-3 px-1 sm:px-2 hidden sm:table-cell">الرقم</th>
+                  <th className="text-center py-2 sm:py-3 px-1 sm:px-2">النقاط</th>
+                  <th className="text-center py-2 sm:py-3 px-1 sm:px-2">إجراء</th>
                 </tr>
               </thead>
               <tbody>
@@ -248,45 +272,45 @@ const ManagePlayers = () => {
                   const posInfo = getPositionInfo(player.position);
                   return (
                     <tr key={player.id} className="border-b hover:bg-gray-50">
-                      <td className="py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-2xl">{posInfo.icon}</span>
-                          <span className="font-medium">{player.name}</span>
+                      <td className="py-2 sm:py-3 px-1 sm:px-2">
+                        <div className="flex items-center gap-1 sm:gap-3">
+                          <span className="text-lg sm:text-2xl">{posInfo.icon}</span>
+                          <span className="font-medium truncate max-w-[80px] sm:max-w-none">{player.name}</span>
                         </div>
                       </td>
-                      <td className="text-center">
-                        <span className="bg-gray-100 px-2 py-1 rounded text-sm">
+                      <td className="text-center py-2 sm:py-3 px-1 sm:px-2">
+                        <span className="bg-gray-100 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-sm">
                           {posInfo.label}
                         </span>
                       </td>
-                      <td className="text-center text-sm text-gray-600">
+                      <td className="text-center text-xs sm:text-sm text-gray-600 hidden sm:table-cell">
                         {player.team?.name}
                       </td>
-                      <td className="text-center">
-                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-bold">
+                      <td className="text-center py-2 sm:py-3 px-1 sm:px-2">
+                        <span className="bg-green-100 text-green-700 px-1 sm:px-2 py-0.5 sm:py-1 rounded text-[10px] sm:text-sm font-bold">
                           {player.price}M
                         </span>
                       </td>
-                      <td className="text-center">
+                      <td className="text-center hidden sm:table-cell">
                         {player.shirtNumber || '-'}
                       </td>
-                      <td className="text-center">
-                        <span className="font-bold text-primary-600">
+                      <td className="text-center py-2 sm:py-3 px-1 sm:px-2">
+                        <span className="font-bold text-primary-600 text-sm sm:text-base">
                           {player.totalPoints}
                         </span>
                       </td>
-                      <td className="text-center">
-                        <div className="flex items-center justify-center gap-2">
+                      <td className="text-center py-2 sm:py-3 px-1 sm:px-2">
+                        <div className="flex items-center justify-center gap-1">
                           <button
                             onClick={() => handleEdit(player)}
-                            className="text-blue-600 hover:text-blue-800 p-1"
+                            className="text-blue-600 hover:text-blue-800 p-0.5 sm:p-1"
                             title="تعديل"
                           >
                             ✏️
                           </button>
                           <button
                             onClick={() => handleDelete(player.id)}
-                            className="text-red-600 hover:text-red-800 p-1"
+                            className="text-red-600 hover:text-red-800 p-0.5 sm:p-1"
                             title="حذف"
                           >
                             🗑️
@@ -300,15 +324,15 @@ const ManagePlayers = () => {
             </table>
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="text-5xl mb-4">👤</div>
-            <p className="text-gray-600">لا يوجد لاعبين</p>
+          <div className="text-center py-8 sm:py-12">
+            <div className="text-4xl sm:text-5xl mb-4">👤</div>
+            <p className="text-gray-600 text-sm sm:text-base">لا يوجد لاعبين</p>
             <button
               onClick={() => {
                 resetForm();
                 setShowModal(true);
               }}
-              className="btn-primary mt-4"
+              className="btn-primary mt-4 text-sm sm:text-base"
             >
               إضافة أول لاعب
             </button>
@@ -318,15 +342,15 @@ const ManagePlayers = () => {
 
       {/* Stats Summary */}
       {players.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
           {POSITIONS.map((pos) => {
             const count = players.filter(p => p.position === pos.value).length;
             return (
-              <div key={pos.value} className="card bg-gray-50">
+              <div key={pos.value} className="card bg-gray-50 p-2 sm:p-4">
                 <div className="text-center">
-                  <span className="text-3xl">{pos.icon}</span>
-                  <p className="font-bold text-xl mt-2">{count}</p>
-                  <p className="text-sm text-gray-600">{pos.label}</p>
+                  <span className="text-2xl sm:text-3xl">{pos.icon}</span>
+                  <p className="font-bold text-lg sm:text-xl mt-1 sm:mt-2">{count}</p>
+                  <p className="text-xs sm:text-sm text-gray-600">{pos.label}</p>
                 </div>
               </div>
             );
@@ -336,35 +360,35 @@ const ManagePlayers = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-md max-h-[95vh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
               {editingPlayer ? 'تعديل اللاعب' : 'إضافة لاعب جديد'}
             </h2>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   اسم اللاعب *
                 </label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   placeholder="الاسم الكامل"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   المركز *
                 </label>
                 <select
                   value={formData.position}
                   onChange={(e) => setFormData({ ...formData, position: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   required
                 >
                   {POSITIONS.map((pos) => (
@@ -376,13 +400,13 @@ const ManagePlayers = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   الفريق *
                 </label>
                 <select
                   value={formData.teamId}
                   onChange={(e) => setFormData({ ...formData, teamId: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   required
                 >
                   <option value="">اختر الفريق</option>
@@ -395,50 +419,50 @@ const ManagePlayers = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   السعر * (الحد الأقصى 10)
                 </label>
                 <input
                   type="number"
                   value={formData.price}
                   onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   min={0.5}
                   max={10}
                   step={0.5}
                   placeholder="مثال: 5"
                   required
                 />
-                <p className="text-xs text-gray-500 mt-1">السعر بالمليون (0.5 - 10)</p>
+                <p className="text-[10px] sm:text-xs text-gray-500 mt-1">السعر بالمليون (0.5 - 10)</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   رقم القميص (اختياري)
                 </label>
                 <input
                   type="number"
                   value={formData.shirtNumber}
                   onChange={(e) => setFormData({ ...formData, shirtNumber: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   min={1}
                   max={99}
                   placeholder="مثال: 10"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     resetForm();
                   }}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 text-sm sm:text-base"
                 >
                   إلغاء
                 </button>
-                <button type="submit" className="btn-primary flex-1">
+                <button type="submit" className="btn-primary flex-1 text-sm sm:text-base">
                   {editingPlayer ? 'تحديث' : 'إضافة'}
                 </button>
               </div>

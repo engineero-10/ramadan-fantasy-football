@@ -110,8 +110,8 @@ const MatchStats = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="text-4xl animate-bounce mb-4">📊</div>
-          <p className="text-gray-600">جاري التحميل...</p>
+          <div className="text-3xl sm:text-4xl animate-bounce mb-4">📊</div>
+          <p className="text-gray-600 text-sm sm:text-base">جاري التحميل...</p>
         </div>
       </div>
     );
@@ -119,10 +119,10 @@ const MatchStats = () => {
 
   if (!match) {
     return (
-      <div className="card text-center py-12">
-        <div className="text-5xl mb-4">❌</div>
-        <p className="text-gray-600">المباراة غير موجودة</p>
-        <Link to="/admin/matches" className="btn-primary mt-4 inline-block">
+      <div className="card text-center py-8 sm:py-12">
+        <div className="text-4xl sm:text-5xl mb-4">❌</div>
+        <p className="text-gray-600 text-sm sm:text-base">المباراة غير موجودة</p>
+        <Link to="/admin/matches" className="btn-primary mt-4 inline-block text-sm sm:text-base">
           العودة للمباريات
         </Link>
       </div>
@@ -133,32 +133,32 @@ const MatchStats = () => {
   const currentTeam = activeTab === 'home' ? match.homeTeam : match.awayTeam;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Match Header */}
-      <div className="card bg-gradient-to-l from-primary-600 to-secondary-600 text-white">
+      <div className="card bg-gradient-to-l from-primary-600 to-secondary-600 text-white p-3 sm:p-6">
         <div className="text-center">
-          <h1 className="text-xl font-bold mb-2">إحصائيات المباراة</h1>
-          <div className="flex items-center justify-center gap-6">
-            <div>
-              <p className="text-2xl font-bold">{match.homeTeam?.name}</p>
+          <h1 className="text-base sm:text-xl font-bold mb-2">إحصائيات المباراة</h1>
+          <div className="flex items-center justify-center gap-2 sm:gap-6">
+            <div className="flex-1 min-w-0">
+              <p className="text-sm sm:text-2xl font-bold truncate">{match.homeTeam?.name}</p>
             </div>
-            <div className="text-3xl font-bold">
+            <div className="text-xl sm:text-3xl font-bold flex-shrink-0">
               {match.homeScore} - {match.awayScore}
             </div>
-            <div>
-              <p className="text-2xl font-bold">{match.awayTeam?.name}</p>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm sm:text-2xl font-bold truncate">{match.awayTeam?.name}</p>
             </div>
           </div>
-          <p className="text-white/80 mt-2">
+          <p className="text-white/80 mt-2 text-xs sm:text-base">
             {new Date(match.matchDate).toLocaleDateString('ar-SA')} | {match.round?.name}
           </p>
         </div>
       </div>
 
       {/* Points Guide */}
-      <div className="card bg-yellow-50 border border-yellow-200">
-        <h3 className="font-bold mb-3">📝 نظام النقاط</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+      <div className="card bg-yellow-50 border border-yellow-200 p-3 sm:p-6">
+        <h3 className="font-bold mb-2 sm:mb-3 text-sm sm:text-base">📝 نظام النقاط</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm">
           <div className="flex justify-between">
             <span>⚽ هدف:</span>
             <span className="font-bold text-green-600">+5</span>
@@ -191,11 +191,11 @@ const MatchStats = () => {
       </div>
 
       {/* Team Tabs */}
-      <div className="card">
-        <div className="flex border-b mb-4">
+      <div className="card p-3 sm:p-6">
+        <div className="flex border-b mb-3 sm:mb-4">
           <button
             onClick={() => setActiveTab('home')}
-            className={`flex-1 py-3 text-center font-medium transition ${
+            className={`flex-1 py-2 sm:py-3 text-center font-medium transition text-xs sm:text-base truncate ${
               activeTab === 'home'
                 ? 'border-b-2 border-primary-500 text-primary-600'
                 : 'text-gray-500 hover:text-gray-700'
@@ -205,7 +205,7 @@ const MatchStats = () => {
           </button>
           <button
             onClick={() => setActiveTab('away')}
-            className={`flex-1 py-3 text-center font-medium transition ${
+            className={`flex-1 py-2 sm:py-3 text-center font-medium transition text-xs sm:text-base truncate ${
               activeTab === 'away'
                 ? 'border-b-2 border-primary-500 text-primary-600'
                 : 'text-gray-500 hover:text-gray-700'
@@ -216,19 +216,19 @@ const MatchStats = () => {
         </div>
 
         {/* Players Stats Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto -mx-3 sm:mx-0">
+          <table className="w-full text-[10px] sm:text-sm min-w-[500px]">
             <thead>
               <tr className="border-b bg-gray-50">
-                <th className="text-right py-3 px-2">اللاعب</th>
-                <th className="text-center py-3 px-1">⚽</th>
-                <th className="text-center py-3 px-1">👟</th>
-                <th className="text-center py-3 px-1">🟨</th>
-                <th className="text-center py-3 px-1">🟥</th>
-                <th className="text-center py-3 px-1">🛡️</th>
-                <th className="text-center py-3 px-1">🧤</th>
-                <th className="text-center py-3 px-1">⏱️</th>
-                <th className="text-center py-3 px-1" title="نقاط إضافية">➕</th>
+                <th className="text-right py-2 sm:py-3 px-1 sm:px-2">اللاعب</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1">⚽</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1">👟</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1">🟨</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1">🟥</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1">🛡️</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1">🧤</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1">⏱️</th>
+                <th className="text-center py-2 sm:py-3 px-0.5 sm:px-1" title="نقاط إضافية">➕</th>
               </tr>
             </thead>
             <tbody>
@@ -238,94 +238,94 @@ const MatchStats = () => {
                 
                 return (
                   <tr key={player.id} className="border-b hover:bg-gray-50">
-                    <td className="py-2 px-2">
-                      <div className="flex items-center gap-2">
-                        <span>{posInfo.icon}</span>
-                        <div>
-                          <p className="font-medium">{player.name}</p>
-                          <p className="text-xs text-gray-500">{posInfo.name}</p>
+                    <td className="py-1.5 sm:py-2 px-1 sm:px-2">
+                      <div className="flex items-center gap-1 sm:gap-2">
+                        <span className="text-sm sm:text-base">{posInfo.icon}</span>
+                        <div className="min-w-0">
+                          <p className="font-medium text-[10px] sm:text-sm truncate max-w-[70px] sm:max-w-none">{player.name}</p>
+                          <p className="text-[9px] sm:text-xs text-gray-500 hidden sm:block">{posInfo.name}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       <input
                         type="number"
                         value={playerStats.goals || 0}
                         onChange={(e) => handleStatChange(player.id, 'goals', parseInt(e.target.value) || 0)}
-                        className="w-12 text-center border rounded py-1"
+                        className="w-8 sm:w-12 text-center border rounded py-0.5 sm:py-1 text-[10px] sm:text-sm"
                         min={0}
                       />
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       <input
                         type="number"
                         value={playerStats.assists || 0}
                         onChange={(e) => handleStatChange(player.id, 'assists', parseInt(e.target.value) || 0)}
-                        className="w-12 text-center border rounded py-1"
+                        className="w-8 sm:w-12 text-center border rounded py-0.5 sm:py-1 text-[10px] sm:text-sm"
                         min={0}
                       />
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       <input
                         type="number"
                         value={playerStats.yellowCards || 0}
                         onChange={(e) => handleStatChange(player.id, 'yellowCards', parseInt(e.target.value) || 0)}
-                        className="w-12 text-center border rounded py-1"
+                        className="w-8 sm:w-12 text-center border rounded py-0.5 sm:py-1 text-[10px] sm:text-sm"
                         min={0}
                         max={2}
                       />
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       <input
                         type="number"
                         value={playerStats.redCards || 0}
                         onChange={(e) => handleStatChange(player.id, 'redCards', parseInt(e.target.value) || 0)}
-                        className="w-12 text-center border rounded py-1"
+                        className="w-8 sm:w-12 text-center border rounded py-0.5 sm:py-1 text-[10px] sm:text-sm"
                         min={0}
                         max={1}
                       />
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       {player.position === 'GOALKEEPER' ? (
                         <input
                           type="checkbox"
                           checked={playerStats.cleanSheet || false}
                           onChange={(e) => handleStatChange(player.id, 'cleanSheet', e.target.checked)}
-                          className="w-5 h-5"
+                          className="w-4 h-4 sm:w-5 sm:h-5"
                         />
                       ) : (
                         <span className="text-gray-300">-</span>
                       )}
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       {player.position === 'GOALKEEPER' ? (
                         <input
                           type="number"
                           value={playerStats.penaltySaves || 0}
                           onChange={(e) => handleStatChange(player.id, 'penaltySaves', parseInt(e.target.value) || 0)}
-                          className="w-12 text-center border rounded py-1"
+                          className="w-8 sm:w-12 text-center border rounded py-0.5 sm:py-1 text-[10px] sm:text-sm"
                           min={0}
                         />
                       ) : (
                         <span className="text-gray-300">-</span>
                       )}
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       <input
                         type="number"
                         value={playerStats.minutesPlayed || 0}
                         onChange={(e) => handleStatChange(player.id, 'minutesPlayed', parseInt(e.target.value) || 0)}
-                        className="w-14 text-center border rounded py-1"
+                        className="w-9 sm:w-14 text-center border rounded py-0.5 sm:py-1 text-[10px] sm:text-sm"
                         min={0}
                         max={120}
                       />
                     </td>
-                    <td className="text-center px-1">
+                    <td className="text-center px-0.5 sm:px-1">
                       <input
                         type="number"
                         value={playerStats.bonusPoints || 0}
                         onChange={(e) => handleStatChange(player.id, 'bonusPoints', parseInt(e.target.value) || 0)}
-                        className="w-14 text-center border rounded py-1 bg-yellow-50"
+                        className="w-9 sm:w-14 text-center border rounded py-0.5 sm:py-1 bg-yellow-50 text-[10px] sm:text-sm"
                         title="نقاط إضافية يدوية"
                       />
                     </td>
@@ -337,21 +337,21 @@ const MatchStats = () => {
         </div>
 
         {currentPlayers.length === 0 && (
-          <p className="text-center text-gray-500 py-8">لا يوجد لاعبون في هذا الفريق</p>
+          <p className="text-center text-gray-500 py-6 sm:py-8 text-sm">لا يوجد لاعبون في هذا الفريق</p>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex gap-4">
-        <Link to="/admin/matches" className="btn-secondary flex-1">
-          ← العودة للمباريات
+      <div className="flex gap-2 sm:gap-4">
+        <Link to="/admin/matches" className="btn-secondary flex-1 text-xs sm:text-base">
+          ← العودة
         </Link>
         <button
           onClick={handleSaveStats}
           disabled={savingStats}
-          className="btn-primary flex-1"
+          className="btn-primary flex-1 text-xs sm:text-base"
         >
-          {savingStats ? '⏳ جاري الحفظ...' : '💾 حفظ الإحصائيات'}
+          {savingStats ? '⏳ جاري الحفظ...' : '💾 حفظ'}
         </button>
       </div>
     </div>

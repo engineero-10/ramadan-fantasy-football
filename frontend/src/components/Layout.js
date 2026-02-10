@@ -13,7 +13,8 @@ const Layout = () => {
     navigate('/login');
   };
 
-  const navItems = [
+  // عناصر التنقل للمستخدم العادي فقط (الأدمن لا يشارك كلاعب)
+  const userNavItems = [
     { path: '/dashboard', label: 'الرئيسية', icon: '🏠' },
     { path: '/my-team', label: 'فريقي', icon: '⭐' },
     { path: '/rounds', label: 'الجولات', icon: '📅' },
@@ -22,6 +23,15 @@ const Layout = () => {
     { path: '/leaderboard', label: 'الترتيب', icon: '🏆' },
     { path: '/join-league', label: 'انضم لدوري', icon: '🎯' }
   ];
+
+  // عناصر التنقل للأدمن (للعرض فقط بدون مشاركة)
+  const adminNavItems = [
+    { path: '/rounds', label: 'الجولات', icon: '📅' },
+    { path: '/matches', label: 'المباريات', icon: '⚽' },
+    { path: '/leaderboard', label: 'الترتيب', icon: '🏆' }
+  ];
+
+  const navItems = isAdmin ? adminNavItems : userNavItems;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -124,7 +134,7 @@ const Layout = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-6">
         <Outlet />
       </main>
 

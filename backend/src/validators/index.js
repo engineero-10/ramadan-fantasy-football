@@ -80,7 +80,7 @@ const joinLeagueValidator = [
   body('code')
     .trim()
     .notEmpty().withMessage('رمز الدوري مطلوب')
-    .isLength({ min: 8, max: 8 }).withMessage('رمز الدوري يجب أن يكون 8 أحرف')
+    .isLength({ min: 4, max: 20 }).withMessage('رمز الدوري يجب أن يكون بين 4 و 20 حرف')
 ];
 
 // ==================== TEAM VALIDATORS ====================

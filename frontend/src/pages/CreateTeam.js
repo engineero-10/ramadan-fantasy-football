@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { leagueAPI, playerAPI, fantasyTeamAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -32,6 +32,8 @@ const CreateTeam = () => {
   const [positionFilter, setPositionFilter] = useState('');
   const [teamFilter, setTeamFilter] = useState('');
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedLeagueId = searchParams.get('leagueId');
 
   // الحصول على قواعد الدوري
   const leagueRules = selectedLeague ? {
@@ -58,7 +60,17 @@ const CreateTeam = () => {
     try {
       // جلب الدوريات المشترك فيها فقط
       const response = await leagueAPI.getAll({ myLeagues: 'true' });
-      setLeagues(response.data.leagues || []);
+      const fetchedLeagues = response.data.leagues || [];
+      setLeagues(fetchedLeagues);
+      
+      // إذا كان هناك leagueId في الـ URL، اختره تلقائياً
+      if (preselectedLeagueId && fetchedLeagues.length > 0) {
+        const league = fetchedLeagues.find(l => l.id === parseInt(preselectedLeagueId));
+        if (league) {
+          setSelectedLeague(league);
+          setStep(2); // الانتقال مباشرة لتسمية الفريق
+        }
+      }
     } catch (error) {
       toast.error('خطأ في جلب الدوريات');
     }
@@ -295,80 +307,82 @@ const CreateTeam = () => {
 
   // الخطوة 3: اختيار اللاعبين
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header with Budget & Rules */}
-      <div className="card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="card p-3 sm:p-6">
+        <div className="flex flex-col gap-3 sm:gap-4">
           <div>
-            <h1 className="text-xl font-bold">اختيار اللاعبين</h1>
-            <p className="text-gray-600">فريق: {teamName} | دوري: {selectedLeague?.name}</p>
+            <h1 className="text-lg sm:text-xl font-bold">اختيار اللاعبين</h1>
+            <p className="text-sm text-gray-600">فريق: {teamName} | دوري: {selectedLeague?.name}</p>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-center bg-gray-50 px-4 py-2 rounded-xl">
-              <p className="text-2xl font-bold">{selectedPlayers.length}/{leagueRules.totalPlayers}</p>
-              <p className="text-xs text-gray-600">لاعب</p>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="text-center bg-gray-50 px-3 py-2 sm:px-4 rounded-lg sm:rounded-xl flex-1">
+              <p className="text-xl sm:text-2xl font-bold">{selectedPlayers.length}/{leagueRules.totalPlayers}</p>
+              <p className="text-[10px] sm:text-xs text-gray-600">لاعب</p>
             </div>
-            <div className={`text-center px-4 py-2 rounded-xl ${budgetRemaining < 0 ? 'bg-red-100' : 'bg-green-100'}`}>
-              <p className="text-2xl font-bold">{budgetRemaining.toFixed(1)}$</p>
-              <p className="text-xs text-gray-600">متبقي من {leagueRules.budget}$</p>
+            <div className={`text-center px-3 py-2 sm:px-4 rounded-lg sm:rounded-xl flex-1 ${budgetRemaining < 0 ? 'bg-red-100' : 'bg-green-100'}`}>
+              <p className="text-xl sm:text-2xl font-bold">{budgetRemaining.toFixed(1)}$</p>
+              <p className="text-[10px] sm:text-xs text-gray-600">متبقي</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Rules Summary */}
-      <div className="card bg-blue-50">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+      <div className="card bg-blue-50 p-3 sm:p-6">
+        <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center">
           <div>
-            <p className="text-2xl font-bold text-green-600">{startersCount}/{leagueRules.starters}</p>
-            <p className="text-xs">أساسي</p>
+            <p className="text-lg sm:text-2xl font-bold text-green-600">{startersCount}/{leagueRules.starters}</p>
+            <p className="text-[10px] sm:text-xs">أساسي</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-yellow-600">{substitutesCount}/{leagueRules.substitutes}</p>
-            <p className="text-xs">بديل</p>
+            <p className="text-lg sm:text-2xl font-bold text-yellow-600">{substitutesCount}/{leagueRules.substitutes}</p>
+            <p className="text-[10px] sm:text-xs">بديل</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-blue-600">{leagueRules.maxPerTeam}</p>
-            <p className="text-xs">أقصى من فريق واحد</p>
+            <p className="text-lg sm:text-2xl font-bold text-blue-600">{leagueRules.maxPerTeam}</p>
+            <p className="text-[10px] sm:text-xs">أقصى/فريق</p>
           </div>
           <div>
-            <p className="text-2xl font-bold text-purple-600">{budgetUsed.toFixed(1)}$</p>
-            <p className="text-xs">مستخدم</p>
+            <p className="text-lg sm:text-2xl font-bold text-purple-600">{budgetUsed.toFixed(1)}$</p>
+            <p className="text-[10px] sm:text-xs">مستخدم</p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Players List */}
-        <div className="lg:col-span-2 card">
-          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+        <div className="lg:col-span-2 card p-3 sm:p-6">
+          <div className="flex flex-col gap-2 sm:gap-3 mb-3 sm:mb-4">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input flex-1"
+              className="input text-sm"
               placeholder="بحث عن لاعب..."
             />
-            <select
-              value={positionFilter}
-              onChange={(e) => setPositionFilter(e.target.value)}
-              className="input w-full sm:w-32"
-            >
-              <option value="">كل المراكز</option>
-              {Object.entries(POSITIONS).map(([key, { name }]) => (
-                <option key={key} value={key}>{name}</option>
-              ))}
-            </select>
-            <select
-              value={teamFilter}
-              onChange={(e) => setTeamFilter(e.target.value)}
-              className="input w-full sm:w-40"
-            >
-              <option value="">كل الفرق</option>
-              {availableTeams.map((team) => (
-                <option key={team} value={team}>{team}</option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                value={positionFilter}
+                onChange={(e) => setPositionFilter(e.target.value)}
+                className="input flex-1 text-sm"
+              >
+                <option value="">كل المراكز</option>
+                {Object.entries(POSITIONS).map(([key, { name }]) => (
+                  <option key={key} value={key}>{name}</option>
+                ))}
+              </select>
+              <select
+                value={teamFilter}
+                onChange={(e) => setTeamFilter(e.target.value)}
+                className="input flex-1 text-sm"
+              >
+                <option value="">كل الفرق</option>
+                {availableTeams.map((team) => (
+                  <option key={team} value={team}>{team}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {loading ? (
@@ -376,7 +390,7 @@ const CreateTeam = () => {
               <div className="animate-spin text-4xl">⚽</div>
             </div>
           ) : (
-            <div className="max-h-[400px] overflow-y-auto space-y-2">
+            <div className="max-h-[350px] sm:max-h-[400px] overflow-y-auto space-y-2">
               {filteredPlayers.map((player) => {
                 const isSelected = selectedPlayers.find(sp => sp.player.id === player.id);
                 const teamCount = getTeamPlayerCount(player.teamId);
@@ -388,37 +402,37 @@ const CreateTeam = () => {
                 return (
                   <div
                     key={player.id}
-                    className={`flex items-center justify-between p-3 rounded-xl transition ${
+                    className={`flex items-center justify-between p-2 sm:p-3 rounded-lg sm:rounded-xl transition ${
                       isSelected 
                         ? 'bg-primary-100 border-2 border-primary-500' 
                         : 'bg-gray-50'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{POSITIONS[player.position]?.icon}</span>
-                      <div>
-                        <p className="font-medium">{player.name}</p>
-                        <p className="text-xs text-gray-500">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                      <span className="text-lg sm:text-2xl flex-shrink-0">{POSITIONS[player.position]?.icon}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm sm:text-base truncate">{player.name}</p>
+                        <p className="text-[10px] sm:text-xs text-gray-500 truncate">
                           {player.team?.name} 
                           {teamCount > 0 && <span className="text-orange-500 mr-1">({teamCount}/{leagueRules.maxPerTeam})</span>}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-green-600">{parseFloat(player.price || 0).toFixed(1)}$</span>
+                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+                      <span className="text-xs sm:text-sm font-bold text-green-600">{parseFloat(player.price || 0).toFixed(1)}$</span>
                       {isSelected ? (
                         <button
                           onClick={() => removePlayer(player.id)}
-                          className="px-3 py-1 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600"
+                          className="px-2 py-1 bg-red-500 text-white rounded-md sm:rounded-lg text-xs hover:bg-red-600"
                         >
-                          إزالة
+                          ✕
                         </button>
                       ) : (
                         <div className="flex gap-1">
                           <button
                             onClick={() => addPlayer(player, true)}
                             disabled={!canAddStarter}
-                            className={`px-2 py-1 rounded-lg text-xs ${
+                            className={`px-1.5 sm:px-2 py-1 rounded-md text-[10px] sm:text-xs ${
                               canAddStarter 
                                 ? 'bg-green-500 text-white hover:bg-green-600' 
                                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -430,7 +444,7 @@ const CreateTeam = () => {
                           <button
                             onClick={() => addPlayer(player, false)}
                             disabled={!canAddSub}
-                            className={`px-2 py-1 rounded-lg text-xs ${
+                            className={`px-1.5 sm:px-2 py-1 rounded-md text-[10px] sm:text-xs ${
                               canAddSub 
                                 ? 'bg-yellow-500 text-white hover:bg-yellow-600' 
                                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -450,37 +464,37 @@ const CreateTeam = () => {
         </div>
 
         {/* Selected Players */}
-        <div className="card">
-          <h3 className="font-bold mb-4">الفريق المختار</h3>
+        <div className="card p-3 sm:p-6">
+          <h3 className="font-bold mb-3 sm:mb-4 text-sm sm:text-base">الفريق المختار</h3>
           
           {/* الأساسيين */}
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-green-600 mb-2">⭐ الأساسيين ({startersCount}/{leagueRules.starters})</h4>
+          <div className="mb-3 sm:mb-4">
+            <h4 className="text-xs sm:text-sm font-medium text-green-600 mb-2">⭐ الأساسيين ({startersCount}/{leagueRules.starters})</h4>
             {selectedPlayers.filter(sp => sp.isStarter).length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {selectedPlayers.filter(sp => sp.isStarter).map((sp) => (
                   <div
                     key={sp.player.id}
-                    className="flex items-center justify-between bg-green-50 p-2 rounded-lg"
+                    className="flex items-center justify-between bg-green-50 p-1.5 sm:p-2 rounded-md sm:rounded-lg"
                   >
-                    <div className="flex items-center gap-2">
-                      <span>{POSITIONS[sp.player.position]?.icon}</span>
-                      <div>
-                        <span className="text-sm font-medium">{sp.player.name}</span>
-                        <span className="text-xs text-gray-500 mr-1">({sp.player.price}$)</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                      <span className="text-sm sm:text-base">{POSITIONS[sp.player.position]?.icon}</span>
+                      <div className="min-w-0">
+                        <span className="text-xs sm:text-sm font-medium truncate block">{sp.player.name}</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500">({sp.player.price}$)</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => toggleStarterStatus(sp.player.id)}
-                        className="text-yellow-500 hover:text-yellow-700 text-xs"
+                        className="text-yellow-500 hover:text-yellow-700 text-xs p-1"
                         title="تحويل لبديل"
                       >
                         ↓
                       </button>
                       <button
                         onClick={() => removePlayer(sp.player.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 p-1"
                       >
                         ✕
                       </button>
@@ -489,38 +503,38 @@ const CreateTeam = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm text-center py-2">لا يوجد أساسيين</p>
+              <p className="text-gray-400 text-xs sm:text-sm text-center py-2">لا يوجد أساسيين</p>
             )}
           </div>
 
           {/* البدلاء */}
-          <div className="mb-4">
-            <h4 className="text-sm font-medium text-yellow-600 mb-2">📋 البدلاء ({substitutesCount}/{leagueRules.substitutes})</h4>
+          <div className="mb-3 sm:mb-4">
+            <h4 className="text-xs sm:text-sm font-medium text-yellow-600 mb-2">📋 البدلاء ({substitutesCount}/{leagueRules.substitutes})</h4>
             {selectedPlayers.filter(sp => !sp.isStarter).length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {selectedPlayers.filter(sp => !sp.isStarter).map((sp) => (
                   <div
                     key={sp.player.id}
-                    className="flex items-center justify-between bg-yellow-50 p-2 rounded-lg"
+                    className="flex items-center justify-between bg-yellow-50 p-1.5 sm:p-2 rounded-md sm:rounded-lg"
                   >
-                    <div className="flex items-center gap-2">
-                      <span>{POSITIONS[sp.player.position]?.icon}</span>
-                      <div>
-                        <span className="text-sm font-medium">{sp.player.name}</span>
-                        <span className="text-xs text-gray-500 mr-1">({sp.player.price}$)</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                      <span className="text-sm sm:text-base">{POSITIONS[sp.player.position]?.icon}</span>
+                      <div className="min-w-0">
+                        <span className="text-xs sm:text-sm font-medium truncate block">{sp.player.name}</span>
+                        <span className="text-[10px] sm:text-xs text-gray-500">({sp.player.price}$)</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 flex-shrink-0">
                       <button
                         onClick={() => toggleStarterStatus(sp.player.id)}
-                        className="text-green-500 hover:text-green-700 text-xs"
+                        className="text-green-500 hover:text-green-700 text-xs p-1"
                         title="تحويل لأساسي"
                       >
                         ↑
                       </button>
                       <button
                         onClick={() => removePlayer(sp.player.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 p-1"
                       >
                         ✕
                       </button>
@@ -529,21 +543,21 @@ const CreateTeam = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm text-center py-2">لا يوجد بدلاء</p>
+              <p className="text-gray-400 text-xs sm:text-sm text-center py-2">لا يوجد بدلاء</p>
             )}
           </div>
 
           <div className="space-y-2">
             <button
               onClick={() => setStep(2)}
-              className="btn-secondary w-full"
+              className="btn-secondary w-full text-sm"
             >
               رجوع
             </button>
             <button
               onClick={handleCreateTeam}
               disabled={selectedPlayers.length !== leagueRules.totalPlayers || startersCount !== leagueRules.starters || loading}
-              className="btn-primary w-full"
+              className="btn-primary w-full text-sm"
             >
               {loading ? '⏳ جاري الإنشاء...' : '🎉 إنشاء الفريق'}
             </button>

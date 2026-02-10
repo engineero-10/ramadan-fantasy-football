@@ -81,22 +81,22 @@ const Matches = () => {
   }, {});
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="card p-3 sm:p-6">
+        <div className="flex flex-col gap-3 sm:gap-4">
           <div>
-            <h1 className="text-2xl font-bold">📅 المباريات</h1>
-            <p className="text-gray-600">جدول مباريات البطولة</p>
+            <h1 className="text-lg sm:text-2xl font-bold">📅 المباريات</h1>
+            <p className="text-sm text-gray-600">جدول مباريات البطولة</p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <select
               value={selectedLeague}
               onChange={(e) => {
                 setSelectedLeague(e.target.value);
                 setSelectedRound('');
               }}
-              className="input"
+              className="input text-sm flex-1"
             >
               <option value="">كل الدوريات</option>
               {leagues.map((league) => (
@@ -108,7 +108,7 @@ const Matches = () => {
             <select
               value={selectedRound}
               onChange={(e) => setSelectedRound(e.target.value)}
-              className="input"
+              className="input text-sm flex-1"
               disabled={!selectedLeague}
             >
               <option value="">كل الجولات</option>
@@ -132,9 +132,9 @@ const Matches = () => {
         </div>
       ) : matches.length > 0 ? (
         Object.entries(matchesByRound).map(([roundName, roundMatches]) => (
-          <div key={roundName} className="card">
-            <h2 className="font-bold text-lg mb-4 pb-2 border-b">{roundName}</h2>
-            <div className="space-y-4">
+          <div key={roundName} className="card p-3 sm:p-6">
+            <h2 className="font-bold text-base sm:text-lg mb-3 sm:mb-4 pb-2 border-b">{roundName}</h2>
+            <div className="space-y-3 sm:space-y-4">
               {roundMatches.map((match) => (
                 <MatchCard key={match.id} match={match} />
               ))}
@@ -160,54 +160,54 @@ const MatchCard = ({ match }) => {
   return (
     <Link 
       to={`/match/${match.id}`}
-      className="block bg-gray-50 hover:bg-gray-100 rounded-xl p-4 transition"
+      className="block bg-gray-50 hover:bg-gray-100 rounded-lg sm:rounded-xl p-3 sm:p-4 transition"
     >
-      <div className="flex items-center justify-between mb-3">
-        <span className={`text-xs px-2 py-1 rounded ${status.color}`}>
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded ${status.color}`}>
           {status.icon} {status.label}
         </span>
-        <span className="text-xs text-gray-500">
+        <span className="text-[10px] sm:text-xs text-gray-500">
           {matchDate.toLocaleDateString('ar-SA')} - {matchDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
 
       <div className="flex items-center justify-between">
         {/* Home Team */}
-        <div className="flex-1 text-center">
-          <div className="w-12 h-12 bg-white rounded-full mx-auto flex items-center justify-center text-2xl shadow">
+        <div className="flex-1 text-center min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full mx-auto flex items-center justify-center text-xl sm:text-2xl shadow">
             ⚽
           </div>
-          <p className="font-medium mt-2">{match.homeTeam?.name}</p>
+          <p className="font-medium mt-1 sm:mt-2 text-xs sm:text-sm truncate px-1">{match.homeTeam?.name}</p>
         </div>
 
         {/* Score */}
-        <div className="flex-shrink-0 px-6">
+        <div className="flex-shrink-0 px-2 sm:px-6">
           {isFinished ? (
             <div className="text-center">
-              <p className="text-3xl font-bold">
+              <p className="text-xl sm:text-3xl font-bold">
                 {match.homeScore} - {match.awayScore}
               </p>
-              <p className="text-xs text-gray-500">النتيجة النهائية</p>
+              <p className="text-[9px] sm:text-xs text-gray-500">النتيجة</p>
             </div>
           ) : (
             <div className="text-center">
-              <p className="text-2xl font-bold text-gray-300">VS</p>
-              <p className="text-xs text-gray-500">لم تبدأ</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-300">VS</p>
+              <p className="text-[9px] sm:text-xs text-gray-500">لم تبدأ</p>
             </div>
           )}
         </div>
 
         {/* Away Team */}
-        <div className="flex-1 text-center">
-          <div className="w-12 h-12 bg-white rounded-full mx-auto flex items-center justify-center text-2xl shadow">
+        <div className="flex-1 text-center min-w-0">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-full mx-auto flex items-center justify-center text-xl sm:text-2xl shadow">
             ⚽
           </div>
-          <p className="font-medium mt-2">{match.awayTeam?.name}</p>
+          <p className="font-medium mt-1 sm:mt-2 text-xs sm:text-sm truncate px-1">{match.awayTeam?.name}</p>
         </div>
       </div>
 
       {match.location && (
-        <p className="text-center text-xs text-gray-500 mt-3">
+        <p className="text-center text-[10px] sm:text-xs text-gray-500 mt-2 sm:mt-3 truncate">
           📍 {match.location}
         </p>
       )}

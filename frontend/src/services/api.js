@@ -45,11 +45,13 @@ export const leagueAPI = {
   getAll: (params) => api.get('/leagues', { params }),
   getById: (id) => api.get(`/leagues/${id}`),
   getByCode: (code) => api.get(`/leagues/code/${code}`),
+  getMyAdminLeagues: () => api.get('/leagues/my-admin-leagues'),
   create: (data) => api.post('/leagues', data),
   update: (id, data) => api.put(`/leagues/${id}`, data),
   delete: (id) => api.delete(`/leagues/${id}`),
   join: (code) => api.post('/leagues/join', { code }),
-  getMembers: (id) => api.get(`/leagues/${id}/members`)
+  getMembers: (id) => api.get(`/leagues/${id}/members`),
+  updateMemberRole: (leagueId, userId, role) => api.put(`/leagues/${leagueId}/members/${userId}/role`, { role })
 };
 
 // ==================== TEAMS ====================
@@ -87,6 +89,8 @@ export const roundAPI = {
   getAll: (leagueId) => api.get('/rounds', { params: { leagueId } }),
   getById: (id) => api.get(`/rounds/${id}`),
   getCurrent: (leagueId) => api.get(`/rounds/current/${leagueId}`),
+  getStats: (id) => api.get(`/rounds/${id}/stats`),
+  getMyStats: (id) => api.get(`/rounds/${id}/my-stats`),
   create: (data) => api.post('/rounds', data),
   update: (id, data) => api.put(`/rounds/${id}`, data),
   toggleTransfers: (id, transfersOpen) => api.put(`/rounds/${id}/transfers`, { transfersOpen }),
@@ -96,6 +100,7 @@ export const roundAPI = {
 
 // ==================== FANTASY TEAMS ====================
 export const fantasyTeamAPI = {
+  getMyTeams: () => api.get('/fantasy-teams/my-all'),
   getMyTeam: (leagueId) => api.get(leagueId ? `/fantasy-teams/${leagueId}` : '/fantasy-teams/my'),
   getById: (id) => api.get(`/fantasy-teams/team/${id}`),
   create: (data) => api.post('/fantasy-teams', data),

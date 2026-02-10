@@ -11,12 +11,12 @@ const MATCH_STATUS = {
   CANCELLED: { label: 'ملغاة', color: 'bg-red-100 text-red-700' },
 };
 
-const ManageMatches = () => {
+const ManageMatches = ({ fixedLeagueId }) => {
   const [matches, setMatches] = useState([]);
   const [teams, setTeams] = useState([]);
   const [rounds, setRounds] = useState([]);
   const [leagues, setLeagues] = useState([]);
-  const [selectedLeague, setSelectedLeague] = useState('');
+  const [selectedLeague, setSelectedLeague] = useState(fixedLeagueId || '');
   const [selectedRound, setSelectedRound] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -36,8 +36,13 @@ const ManageMatches = () => {
   });
 
   useEffect(() => {
-    fetchLeagues();
-  }, []);
+    if (!fixedLeagueId) {
+      fetchLeagues();
+    } else {
+      fetchLeagueData();
+      setSelectedLeague(fixedLeagueId);
+    }
+  }, [fixedLeagueId]);
 
   useEffect(() => {
     if (selectedLeague) {
@@ -49,6 +54,16 @@ const ManageMatches = () => {
   useEffect(() => {
     fetchMatches();
   }, [selectedLeague, selectedRound]);
+
+  const fetchLeagueData = async () => {
+    try {
+      const response = await leagueAPI.getById(fixedLeagueId);
+      const league = response.data.league || response.data;
+      setLeagues([league]);
+    } catch (error) {
+      console.error('Error fetching league:', error);
+    }
+  };
 
   const fetchLeagues = async () => {
     try {
@@ -184,45 +199,47 @@ const ManageMatches = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-bold">📅 إدارة المباريات</h1>
-          <p className="text-gray-600">جدولة وإدارة مباريات البطولة</p>
+          <h1 className="text-xl sm:text-2xl font-bold">📅 إدارة المباريات</h1>
+          <p className="text-gray-600 text-sm sm:text-base">جدولة وإدارة مباريات البطولة</p>
         </div>
         <button
           onClick={() => {
             resetForm();
             setShowModal(true);
           }}
-          className="btn-primary"
+          className="btn-primary text-sm sm:text-base"
         >
           ➕ إضافة مباراة
         </button>
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <select
-            value={selectedLeague}
-            onChange={(e) => {
-              setSelectedLeague(e.target.value);
-              setSelectedRound('');
-            }}
-            className="input flex-1"
-          >
-            {leagues.map((league) => (
-              <option key={league.id} value={league.id}>
-                {league.name}
-              </option>
-            ))}
-          </select>
+      <div className="card p-3 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+          {!fixedLeagueId && (
+            <select
+              value={selectedLeague}
+              onChange={(e) => {
+                setSelectedLeague(e.target.value);
+                setSelectedRound('');
+              }}
+              className="input flex-1 text-sm sm:text-base"
+            >
+              {leagues.map((league) => (
+                <option key={league.id} value={league.id}>
+                  {league.name}
+                </option>
+              ))}
+            </select>
+          )}
           <select
             value={selectedRound}
             onChange={(e) => setSelectedRound(e.target.value)}
-            className="input flex-1"
+            className="input flex-1 text-sm sm:text-base"
           >
             <option value="">كل الجولات</option>
             {rounds.map((round) => (
@@ -235,75 +252,77 @@ const ManageMatches = () => {
       </div>
 
       {/* Matches List */}
-      <div className="card">
+      <div className="card p-3 sm:p-6">
         {loading ? (
-          <div className="text-center py-8">
-            <div className="animate-spin text-4xl">⚙️</div>
+          <div className="text-center py-6 sm:py-8">
+            <div className="animate-spin text-3xl sm:text-4xl">⚙️</div>
           </div>
         ) : matches.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {matches.map((match) => {
               const status = MATCH_STATUS[match.status] || MATCH_STATUS.SCHEDULED;
               const matchDate = new Date(match.matchDate);
               
               return (
-                <div key={match.id} className="bg-gray-50 rounded-xl p-4">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="text-center flex-1">
-                        <p className="font-bold">{match.homeTeam?.name}</p>
+                <div key={match.id} className="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                  <div className="flex flex-col gap-3 sm:gap-4">
+                    {/* Match Info */}
+                    <div className="flex items-center gap-2 sm:gap-4">
+                      <div className="text-center flex-1 min-w-0">
+                        <p className="font-bold text-xs sm:text-base truncate">{match.homeTeam?.name}</p>
                       </div>
                       
-                      <div className="text-center px-4">
+                      <div className="text-center px-2 sm:px-4 flex-shrink-0">
                         {match.status === 'COMPLETED' ? (
-                          <p className="text-2xl font-bold">
+                          <p className="text-lg sm:text-2xl font-bold">
                             {match.homeScore} - {match.awayScore}
                           </p>
                         ) : (
-                          <p className="text-xl text-gray-400">VS</p>
+                          <p className="text-base sm:text-xl text-gray-400">VS</p>
                         )}
-                        <span className={`text-xs px-2 py-1 rounded ${status.color}`}>
+                        <span className={`text-[10px] sm:text-xs px-1 sm:px-2 py-0.5 sm:py-1 rounded ${status.color}`}>
                           {status.label}
                         </span>
                       </div>
                       
-                      <div className="text-center flex-1">
-                        <p className="font-bold">{match.awayTeam?.name}</p>
+                      <div className="text-center flex-1 min-w-0">
+                        <p className="font-bold text-xs sm:text-base truncate">{match.awayTeam?.name}</p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col md:flex-row items-center gap-2">
-                      <div className="text-sm text-gray-600 text-center md:text-right">
+                    {/* Date & Actions */}
+                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-gray-200">
+                      <div className="text-[10px] sm:text-sm text-gray-600">
                         <p>{matchDate.toLocaleDateString('ar-SA')}</p>
                         <p>{matchDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</p>
-                        {match.location && <p className="text-xs">📍 {match.location}</p>}
+                        {match.location && <p className="hidden sm:block text-xs">📍 {match.location}</p>}
                       </div>
                       
                       <div className="flex gap-1">
                         <button
                           onClick={() => handleEditResult(match)}
-                          className="bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded text-sm"
+                          className="bg-green-100 text-green-700 hover:bg-green-200 p-1 sm:px-2 sm:py-1 rounded text-xs sm:text-sm"
                           title="تحديث النتيجة"
                         >
                           🎯
                         </button>
                         <Link
-                          to={`/admin/match-stats/${match.id}`}
-                          className="bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-1 rounded text-sm"
+                          to={fixedLeagueId ? `/manage-league/${fixedLeagueId}/match-stats/${match.id}` : `/admin/match-stats/${match.id}`}
+                          className="bg-purple-100 text-purple-700 hover:bg-purple-200 p-1 sm:px-2 sm:py-1 rounded text-xs sm:text-sm"
                           title="إحصائيات اللاعبين"
                         >
                           📊
                         </Link>
                         <button
                           onClick={() => handleEdit(match)}
-                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded text-sm"
+                          className="bg-blue-100 text-blue-700 hover:bg-blue-200 p-1 sm:px-2 sm:py-1 rounded text-xs sm:text-sm"
                           title="تعديل"
                         >
                           ✏️
                         </button>
                         <button
                           onClick={() => handleDelete(match.id)}
-                          className="bg-red-100 text-red-700 hover:bg-red-200 px-2 py-1 rounded text-sm"
+                          className="bg-red-100 text-red-700 hover:bg-red-200 p-1 sm:px-2 sm:py-1 rounded text-xs sm:text-sm"
                           title="حذف"
                         >
                           🗑️
@@ -316,15 +335,15 @@ const ManageMatches = () => {
             })}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <div className="text-5xl mb-4">📅</div>
-            <p className="text-gray-600">لا توجد مباريات</p>
+          <div className="text-center py-8 sm:py-12">
+            <div className="text-4xl sm:text-5xl mb-4">📅</div>
+            <p className="text-gray-600 text-sm sm:text-base">لا توجد مباريات</p>
             <button
               onClick={() => {
                 resetForm();
                 setShowModal(true);
               }}
-              className="btn-primary mt-4"
+              className="btn-primary mt-4 text-sm sm:text-base"
             >
               إضافة أول مباراة
             </button>
@@ -334,21 +353,21 @@ const ManageMatches = () => {
 
       {/* Create/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-md max-h-[95vh] overflow-y-auto">
+            <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">
               {editingMatch ? 'تعديل المباراة' : 'إضافة مباراة جديدة'}
             </h2>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   الفريق المضيف *
                 </label>
                 <select
                   value={formData.homeTeamId}
                   onChange={(e) => setFormData({ ...formData, homeTeamId: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   required
                 >
                   <option value="">اختر الفريق</option>
@@ -361,13 +380,13 @@ const ManageMatches = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   الفريق الضيف *
                 </label>
                 <select
                   value={formData.awayTeamId}
                   onChange={(e) => setFormData({ ...formData, awayTeamId: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   required
                 >
                   <option value="">اختر الفريق</option>
@@ -380,13 +399,13 @@ const ManageMatches = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   الجولة *
                 </label>
                 <select
                   value={formData.roundId}
                   onChange={(e) => setFormData({ ...formData, roundId: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   required
                 >
                   <option value="">اختر الجولة</option>
@@ -399,43 +418,43 @@ const ManageMatches = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   موعد المباراة *
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.matchDate}
                   onChange={(e) => setFormData({ ...formData, matchDate: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   المكان (اختياري)
                 </label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                   placeholder="مثال: ملعب النادي"
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     resetForm();
                   }}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 text-sm sm:text-base"
                 >
                   إلغاء
                 </button>
-                <button type="submit" className="btn-primary flex-1">
+                <button type="submit" className="btn-primary flex-1 text-sm sm:text-base">
                   {editingMatch ? 'تحديث' : 'إضافة'}
                 </button>
               </div>
@@ -446,53 +465,53 @@ const ManageMatches = () => {
 
       {/* Result Modal */}
       {showResultModal && editingMatch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">تحديث نتيجة المباراة</h2>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 w-full max-w-md">
+            <h2 className="text-lg sm:text-xl font-bold mb-3 sm:mb-4">تحديث نتيجة المباراة</h2>
             
-            <div className="text-center mb-6">
-              <p className="text-lg">
+            <div className="text-center mb-4 sm:mb-6">
+              <p className="text-sm sm:text-lg">
                 {editingMatch.homeTeam?.name} vs {editingMatch.awayTeam?.name}
               </p>
             </div>
             
-            <form onSubmit={handleResultSubmit} className="space-y-4">
-              <div className="flex items-center justify-center gap-4">
+            <form onSubmit={handleResultSubmit} className="space-y-3 sm:space-y-4">
+              <div className="flex items-center justify-center gap-2 sm:gap-4">
                 <div className="text-center">
-                  <label className="block text-sm text-gray-600 mb-2">
+                  <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2 truncate max-w-[80px] sm:max-w-none">
                     {editingMatch.homeTeam?.name}
                   </label>
                   <input
                     type="number"
                     value={resultData.homeScore}
                     onChange={(e) => setResultData({ ...resultData, homeScore: parseInt(e.target.value) || 0 })}
-                    className="input w-20 text-center text-2xl"
+                    className="input w-16 sm:w-20 text-center text-xl sm:text-2xl"
                     min={0}
                   />
                 </div>
-                <span className="text-2xl">-</span>
+                <span className="text-xl sm:text-2xl">-</span>
                 <div className="text-center">
-                  <label className="block text-sm text-gray-600 mb-2">
+                  <label className="block text-xs sm:text-sm text-gray-600 mb-1 sm:mb-2 truncate max-w-[80px] sm:max-w-none">
                     {editingMatch.awayTeam?.name}
                   </label>
                   <input
                     type="number"
                     value={resultData.awayScore}
                     onChange={(e) => setResultData({ ...resultData, awayScore: parseInt(e.target.value) || 0 })}
-                    className="input w-20 text-center text-2xl"
+                    className="input w-16 sm:w-20 text-center text-xl sm:text-2xl"
                     min={0}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                   حالة المباراة
                 </label>
                 <select
                   value={resultData.status}
                   onChange={(e) => setResultData({ ...resultData, status: e.target.value })}
-                  className="input"
+                  className="input text-sm sm:text-base"
                 >
                   {Object.entries(MATCH_STATUS).map(([key, { label }]) => (
                     <option key={key} value={key}>
@@ -502,18 +521,18 @@ const ManageMatches = () => {
                 </select>
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-2 sm:gap-3 pt-3 sm:pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowResultModal(false);
                     setEditingMatch(null);
                   }}
-                  className="btn-secondary flex-1"
+                  className="btn-secondary flex-1 text-sm sm:text-base"
                 >
                   إلغاء
                 </button>
-                <button type="submit" className="btn-primary flex-1">
+                <button type="submit" className="btn-primary flex-1 text-sm sm:text-base">
                   حفظ النتيجة
                 </button>
               </div>

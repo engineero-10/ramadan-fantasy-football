@@ -29,15 +29,15 @@ const Login = () => {
     <div className="min-h-screen ramadan-gradient flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-4">⚽</div>
-          <h1 className="text-3xl font-bold text-white">فانتازي رمضان</h1>
-          <p className="text-gray-400 mt-2">منصة الدوري الخيالي لبطولات رمضان</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="text-5xl sm:text-6xl mb-3 sm:mb-4">⚽</div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">فانتازي رمضان</h1>
+          <p className="text-gray-400 mt-2 text-sm sm:text-base">منصة الدوري الخيالي لبطولات رمضان</p>
         </div>
 
         {/* Login Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h2 className="text-2xl font-bold text-center mb-6">تسجيل الدخول</h2>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-xl p-5 sm:p-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6">تسجيل الدخول</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -84,8 +84,8 @@ const Login = () => {
             </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
+          <div className="mt-4 sm:mt-6 text-center">
+            <p className="text-gray-600 text-sm sm:text-base">
               ليس لديك حساب؟{' '}
               <Link to="/register" className="text-primary-600 font-medium hover:underline">
                 إنشاء حساب جديد

@@ -3,6 +3,42 @@
  */
 
 const { v4: uuidv4 } = require('uuid');
+const prisma = require('../config/database');
+
+/**
+ * Check if user is a league admin
+ * @param {number} userId - User ID
+ * @param {number} leagueId - League ID
+ * @returns {Promise<boolean>} True if user is admin in the league
+ */
+async function isLeagueAdmin(userId, leagueId) {
+  const membership = await prisma.leagueMember.findUnique({
+    where: {
+      userId_leagueId: {
+        userId: parseInt(userId),
+        leagueId: parseInt(leagueId)
+      }
+    }
+  });
+  return membership?.role === 'ADMIN';
+}
+
+/**
+ * Check if user has admin access to league (system admin, league creator, or league admin)
+ * @param {Object} user - User object with id and role
+ * @param {Object} league - League object with id and createdById
+ * @returns {Promise<boolean>} True if user has admin access
+ */
+async function hasLeagueAccess(user, league) {
+  // System admin has access to everything
+  if (user.role === 'ADMIN') return true;
+  
+  // League creator has access
+  if (league.createdById === user.id) return true;
+  
+  // Check if user is league admin
+  return await isLeagueAdmin(user.id, league.id);
+}
 
 /**
  * Generate unique league code
@@ -129,5 +165,7 @@ module.exports = {
   paginationMeta,
   isTransfersLocked,
   validateFormation,
-  calculateBudgetUsed
+  calculateBudgetUsed,
+  isLeagueAdmin,
+  hasLeagueAccess
 };

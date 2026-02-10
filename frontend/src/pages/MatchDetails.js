@@ -73,76 +73,76 @@ const MatchDetails = () => {
   const awayStats = match.stats?.filter(s => s.player?.teamId === match.awayTeamId) || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Match Header */}
-      <div className="card bg-gradient-to-l from-primary-600 to-secondary-600 text-white">
-        <div className="text-center mb-4">
-          <span className={`inline-block px-3 py-1 rounded text-sm ${status.color}`}>
+      <div className="card bg-gradient-to-l from-primary-600 to-secondary-600 text-white p-4 sm:p-6">
+        <div className="text-center mb-3 sm:mb-4">
+          <span className={`inline-block px-2 sm:px-3 py-0.5 sm:py-1 rounded text-xs sm:text-sm ${status.color}`}>
             {status.label}
           </span>
-          <p className="mt-2 text-white/80">
-            {matchDate.toLocaleDateString('ar-SA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          <p className="mt-1.5 sm:mt-2 text-white/80 text-sm sm:text-base">
+            {matchDate.toLocaleDateString('ar-SA')}
           </p>
-          <p className="text-white/60">
+          <p className="text-white/60 text-xs sm:text-sm">
             {matchDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
 
-        <div className="flex items-center justify-between max-w-xl mx-auto">
+        <div className="flex items-center justify-between max-w-xl mx-auto gap-2">
           {/* Home Team */}
-          <div className="flex-1 text-center">
-            <div className="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center text-4xl shadow-lg">
+          <div className="flex-1 text-center min-w-0">
+            <div className="w-12 h-12 sm:w-20 sm:h-20 bg-white rounded-full mx-auto flex items-center justify-center text-2xl sm:text-4xl shadow-lg">
               ⚽
             </div>
-            <p className="font-bold text-lg mt-3">{match.homeTeam?.name}</p>
+            <p className="font-bold text-xs sm:text-lg mt-2 sm:mt-3 truncate px-1">{match.homeTeam?.shortName || match.homeTeam?.name}</p>
           </div>
 
           {/* Score */}
-          <div className="flex-shrink-0 px-8">
+          <div className="flex-shrink-0 px-2 sm:px-8">
             {isFinished ? (
-              <p className="text-5xl font-bold">
+              <p className="text-3xl sm:text-5xl font-bold">
                 {match.homeScore} - {match.awayScore}
               </p>
             ) : (
-              <p className="text-4xl font-bold text-white/50">VS</p>
+              <p className="text-2xl sm:text-4xl font-bold text-white/50">VS</p>
             )}
           </div>
 
           {/* Away Team */}
-          <div className="flex-1 text-center">
-            <div className="w-20 h-20 bg-white rounded-full mx-auto flex items-center justify-center text-4xl shadow-lg">
+          <div className="flex-1 text-center min-w-0">
+            <div className="w-12 h-12 sm:w-20 sm:h-20 bg-white rounded-full mx-auto flex items-center justify-center text-2xl sm:text-4xl shadow-lg">
               ⚽
             </div>
-            <p className="font-bold text-lg mt-3">{match.awayTeam?.name}</p>
+            <p className="font-bold text-xs sm:text-lg mt-2 sm:mt-3 truncate px-1">{match.awayTeam?.shortName || match.awayTeam?.name}</p>
           </div>
         </div>
 
         {match.location && (
-          <p className="text-center text-white/80 mt-4">
+          <p className="text-center text-white/80 mt-3 sm:mt-4 text-xs sm:text-base">
             📍 {match.location}
           </p>
         )}
       </div>
 
       {/* Match Info */}
-      <div className="card">
-        <h2 className="font-bold text-lg mb-4">معلومات المباراة</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-gray-50 rounded-xl p-4 text-center">
-            <p className="text-sm text-gray-500">الدوري</p>
-            <p className="font-medium">{match.round?.league?.name || '-'}</p>
+      <div className="card p-3 sm:p-6">
+        <h2 className="font-bold text-sm sm:text-lg mb-3 sm:mb-4">معلومات المباراة</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+          <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center">
+            <p className="text-[10px] sm:text-sm text-gray-500">الدوري</p>
+            <p className="font-medium text-xs sm:text-base truncate">{match.round?.league?.name || '-'}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4 text-center">
-            <p className="text-sm text-gray-500">الجولة</p>
-            <p className="font-medium">{match.round?.name || '-'}</p>
+          <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center">
+            <p className="text-[10px] sm:text-sm text-gray-500">الجولة</p>
+            <p className="font-medium text-xs sm:text-base truncate">{match.round?.name || '-'}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4 text-center">
-            <p className="text-sm text-gray-500">التاريخ</p>
-            <p className="font-medium">{matchDate.toLocaleDateString('ar-SA')}</p>
+          <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center">
+            <p className="text-[10px] sm:text-sm text-gray-500">التاريخ</p>
+            <p className="font-medium text-xs sm:text-base">{matchDate.toLocaleDateString('ar-SA')}</p>
           </div>
-          <div className="bg-gray-50 rounded-xl p-4 text-center">
-            <p className="text-sm text-gray-500">الوقت</p>
-            <p className="font-medium">
+          <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-4 text-center">
+            <p className="text-[10px] sm:text-sm text-gray-500">الوقت</p>
+            <p className="font-medium text-xs sm:text-base">
               {matchDate.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
             </p>
           </div>
@@ -151,36 +151,36 @@ const MatchDetails = () => {
 
       {/* Match Stats */}
       {isFinished && (homeStats.length > 0 || awayStats.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
           {/* Home Team Stats */}
-          <div className="card">
-            <h3 className="font-bold mb-4 text-center border-b pb-2">
+          <div className="card p-3 sm:p-6">
+            <h3 className="font-bold mb-3 sm:mb-4 text-center border-b pb-2 text-sm sm:text-base truncate">
               {match.homeTeam?.name}
             </h3>
             {homeStats.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {homeStats.map((stat) => (
                   <PlayerStatCard key={stat.id} stat={stat} />
                 ))}
               </div>
             ) : (
-              <p className="text-center text-gray-500 py-4">لا توجد إحصائيات</p>
+              <p className="text-center text-gray-500 py-3 sm:py-4 text-sm">لا توجد إحصائيات</p>
             )}
           </div>
 
           {/* Away Team Stats */}
-          <div className="card">
-            <h3 className="font-bold mb-4 text-center border-b pb-2">
+          <div className="card p-3 sm:p-6">
+            <h3 className="font-bold mb-3 sm:mb-4 text-center border-b pb-2 text-sm sm:text-base truncate">
               {match.awayTeam?.name}
             </h3>
             {awayStats.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {awayStats.map((stat) => (
                   <PlayerStatCard key={stat.id} stat={stat} />
                 ))}
               </div>
             ) : (
-              <p className="text-center text-gray-500 py-4">لا توجد إحصائيات</p>
+              <p className="text-center text-gray-500 py-3 sm:py-4 text-sm">لا توجد إحصائيات</p>
             )}
           </div>
         </div>
@@ -188,7 +188,7 @@ const MatchDetails = () => {
 
       {/* Back Button */}
       <div className="text-center">
-        <Link to="/matches" className="btn-secondary">
+        <Link to="/matches" className="btn-secondary text-sm sm:text-base py-2 px-4">
           ← العودة للمباريات
         </Link>
       </div>
@@ -199,49 +199,49 @@ const MatchDetails = () => {
 // مكون إحصائيات اللاعب
 const PlayerStatCard = ({ stat }) => {
   return (
-    <div className="bg-gray-50 rounded-xl p-3">
-      <div className="flex items-center justify-between mb-2">
-        <Link to={`/player/${stat.player?.id}`} className="font-medium hover:text-primary-600">
+    <div className="bg-gray-50 rounded-lg sm:rounded-xl p-2 sm:p-3">
+      <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+        <Link to={`/player/${stat.player?.id}`} className="font-medium hover:text-primary-600 text-xs sm:text-base truncate flex-1 ml-2">
           {stat.player?.name}
         </Link>
-        <span className="text-sm bg-primary-100 text-primary-700 px-2 py-1 rounded">
-          +{stat.points} نقطة
+        <span className="text-[10px] sm:text-sm bg-primary-100 text-primary-700 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded flex-shrink-0">
+          +{stat.points} ن
         </span>
       </div>
-      <div className="flex flex-wrap gap-2 text-sm">
+      <div className="flex flex-wrap gap-1 sm:gap-2 text-[10px] sm:text-sm">
         {stat.goals > 0 && (
-          <span className="bg-white px-2 py-1 rounded">
-            {STAT_ICONS.goals} {stat.goals} هدف
+          <span className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            {STAT_ICONS.goals}{stat.goals}
           </span>
         )}
         {stat.assists > 0 && (
-          <span className="bg-white px-2 py-1 rounded">
-            {STAT_ICONS.assists} {stat.assists} تمريرة
+          <span className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            {STAT_ICONS.assists}{stat.assists}
           </span>
         )}
         {stat.yellowCards > 0 && (
-          <span className="bg-white px-2 py-1 rounded">
-            {STAT_ICONS.yellowCards} {stat.yellowCards}
+          <span className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            {STAT_ICONS.yellowCards}{stat.yellowCards}
           </span>
         )}
         {stat.redCards > 0 && (
-          <span className="bg-white px-2 py-1 rounded">
-            {STAT_ICONS.redCards} {stat.redCards}
+          <span className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            {STAT_ICONS.redCards}{stat.redCards}
           </span>
         )}
         {stat.cleanSheet && (
-          <span className="bg-white px-2 py-1 rounded">
-            {STAT_ICONS.cleanSheet} شباك نظيفة
+          <span className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            {STAT_ICONS.cleanSheet}
           </span>
         )}
         {stat.penaltySaved > 0 && (
-          <span className="bg-white px-2 py-1 rounded">
-            {STAT_ICONS.penaltySaved} {stat.penaltySaved} ركلة
+          <span className="bg-white px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            {STAT_ICONS.penaltySaved}{stat.penaltySaved}
           </span>
         )}
         {stat.minutesPlayed > 0 && (
-          <span className="bg-gray-100 px-2 py-1 rounded text-gray-600">
-            {STAT_ICONS.minutesPlayed} {stat.minutesPlayed} دقيقة
+          <span className="bg-gray-100 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-gray-600">
+            {STAT_ICONS.minutesPlayed}{stat.minutesPlayed}د
           </span>
         )}
       </div>

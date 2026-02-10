@@ -4,7 +4,7 @@
  */
 
 const prisma = require('../config/database');
-const { formatResponse, paginate, paginationMeta } = require('../utils/helpers');
+const { formatResponse, paginate, paginationMeta, hasLeagueAccess } = require('../utils/helpers');
 
 /**
  * Create round (Admin only)
@@ -25,7 +25,7 @@ const createRound = async (req, res, next) => {
       );
     }
 
-    if (league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بإضافة جولات لهذا الدوري')
       );
@@ -160,7 +160,7 @@ const updateRound = async (req, res, next) => {
       );
     }
 
-    if (round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بتعديل هذه الجولة')
       );
@@ -205,7 +205,7 @@ const toggleTransfers = async (req, res, next) => {
       );
     }
 
-    if (round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بتعديل هذه الجولة')
       );
@@ -245,7 +245,7 @@ const completeRound = async (req, res, next) => {
       );
     }
 
-    if (round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بإتمام هذه الجولة')
       );
@@ -366,7 +366,7 @@ const deleteRound = async (req, res, next) => {
       );
     }
 
-    if (round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بحذف هذه الجولة')
       );
@@ -493,6 +493,334 @@ const getCurrentRound = async (req, res, next) => {
   }
 };
 
+/**
+ * Get round statistics
+ * GET /api/rounds/:id/stats
+ * Returns user rankings and top players for a round
+ */
+const getRoundStats = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const roundId = parseInt(id);
+
+    // Get round with league info
+    const round = await prisma.round.findUnique({
+      where: { id: roundId },
+      include: {
+        league: true
+      }
+    });
+
+    if (!round) {
+      return res.status(404).json(
+        formatResponse('error', 'الجولة غير موجودة')
+      );
+    }
+
+    // Get user rankings for this round (from PointsHistory)
+    const userRankings = await prisma.pointsHistory.findMany({
+      where: { roundId },
+      include: {
+        fantasyTeam: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        }
+      },
+      orderBy: { points: 'desc' }
+    });
+
+    // Format user rankings
+    const formattedUserRankings = userRankings.map((ph, index) => ({
+      rank: index + 1,
+      userId: ph.fantasyTeam.user.id,
+      userName: ph.fantasyTeam.user.name,
+      teamName: ph.fantasyTeam.name,
+      points: ph.points,
+      previousRank: ph.rank
+    }));
+
+    // Get matches in this round
+    const matches = await prisma.match.findMany({
+      where: { roundId },
+      select: { id: true }
+    });
+    const matchIds = matches.map(m => m.id);
+
+    // Get top 10 players by points in this round
+    const topPlayers = await prisma.matchStat.findMany({
+      where: {
+        matchId: { in: matchIds }
+      },
+      include: {
+        player: {
+          include: {
+            team: {
+              select: { id: true, name: true, shortName: true }
+            }
+          }
+        },
+        match: {
+          include: {
+            homeTeam: { select: { id: true, name: true, shortName: true } },
+            awayTeam: { select: { id: true, name: true, shortName: true } }
+          }
+        }
+      },
+      orderBy: { points: 'desc' },
+      take: 10
+    });
+
+    // Format top players
+    const formattedTopPlayers = topPlayers.map((stat, index) => ({
+      rank: index + 1,
+      playerId: stat.player.id,
+      playerName: stat.player.name,
+      position: stat.player.position,
+      teamName: stat.player.team.name,
+      teamShortName: stat.player.team.shortName,
+      points: stat.points,
+      goals: stat.goals,
+      assists: stat.assists,
+      cleanSheet: stat.cleanSheet,
+      bonusPoints: stat.bonusPoints,
+      matchInfo: `${stat.match.homeTeam.shortName || stat.match.homeTeam.name} vs ${stat.match.awayTeam.shortName || stat.match.awayTeam.name}`
+    }));
+
+    // Calculate round statistics
+    const totalPoints = userRankings.reduce((sum, ph) => sum + ph.points, 0);
+    const avgPoints = userRankings.length > 0 ? Math.round(totalPoints / userRankings.length) : 0;
+    const highestPoints = userRankings.length > 0 ? userRankings[0].points : 0;
+    const lowestPoints = userRankings.length > 0 ? userRankings[userRankings.length - 1].points : 0;
+
+    res.json(formatResponse('success', 'تم جلب إحصائيات الجولة', {
+      round: {
+        id: round.id,
+        name: round.name,
+        roundNumber: round.roundNumber,
+        isCompleted: round.isCompleted
+      },
+      statistics: {
+        totalParticipants: userRankings.length,
+        totalPoints,
+        averagePoints: avgPoints,
+        highestPoints,
+        lowestPoints
+      },
+      userRankings: formattedUserRankings,
+      topPlayers: formattedTopPlayers
+    }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get round statistics for user (includes their own players)
+ * GET /api/rounds/:id/my-stats
+ * Returns user rankings, top players, and user's own team players for a round
+ */
+const getMyRoundStats = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const roundId = parseInt(id);
+
+    // Get round with league info
+    const round = await prisma.round.findUnique({
+      where: { id: roundId },
+      include: {
+        league: true
+      }
+    });
+
+    if (!round) {
+      return res.status(404).json(
+        formatResponse('error', 'الجولة غير موجودة')
+      );
+    }
+
+    // Get user's fantasy team
+    const fantasyTeam = await prisma.fantasyTeam.findFirst({
+      where: {
+        userId,
+        leagueId: round.leagueId
+      }
+    });
+
+    if (!fantasyTeam) {
+      return res.status(404).json(
+        formatResponse('error', 'لا يوجد فريق خيالي في هذا الدوري')
+      );
+    }
+
+    // Get user rankings for this round (from PointsHistory)
+    const userRankings = await prisma.pointsHistory.findMany({
+      where: { roundId },
+      include: {
+        fantasyTeam: {
+          include: {
+            user: {
+              select: { id: true, name: true, email: true }
+            }
+          }
+        }
+      },
+      orderBy: { points: 'desc' }
+    });
+
+    // Format user rankings and find current user's rank
+    let myRank = null;
+    let myPoints = 0;
+    const formattedUserRankings = userRankings.map((ph, index) => {
+      const ranking = {
+        rank: index + 1,
+        userId: ph.fantasyTeam.user.id,
+        userName: ph.fantasyTeam.user.name,
+        teamName: ph.fantasyTeam.name,
+        points: ph.points,
+        isMe: ph.fantasyTeam.userId === userId
+      };
+      if (ranking.isMe) {
+        myRank = index + 1;
+        myPoints = ph.points;
+      }
+      return ranking;
+    });
+
+    // Get matches in this round
+    const matches = await prisma.match.findMany({
+      where: { roundId },
+      select: { id: true }
+    });
+    const matchIds = matches.map(m => m.id);
+
+    // Get top 10 players by points in this round
+    const topPlayers = await prisma.matchStat.findMany({
+      where: {
+        matchId: { in: matchIds }
+      },
+      include: {
+        player: {
+          include: {
+            team: {
+              select: { id: true, name: true, shortName: true }
+            }
+          }
+        },
+        match: {
+          include: {
+            homeTeam: { select: { id: true, name: true, shortName: true } },
+            awayTeam: { select: { id: true, name: true, shortName: true } }
+          }
+        }
+      },
+      orderBy: { points: 'desc' },
+      take: 10
+    });
+
+    // Format top players
+    const formattedTopPlayers = topPlayers.map((stat, index) => ({
+      rank: index + 1,
+      playerId: stat.player.id,
+      playerName: stat.player.name,
+      position: stat.player.position,
+      teamName: stat.player.team.name,
+      teamShortName: stat.player.team.shortName,
+      points: stat.points,
+      goals: stat.goals,
+      assists: stat.assists,
+      cleanSheet: stat.cleanSheet,
+      bonusPoints: stat.bonusPoints,
+      matchInfo: `${stat.match.homeTeam.shortName || stat.match.homeTeam.name} vs ${stat.match.awayTeam.shortName || stat.match.awayTeam.name}`
+    }));
+
+    // Get user's players in this round with their stats
+    // We need to get the players that were in the team when this round was played
+    // For simplicity, we'll get the current team players and their stats for this round
+    const fantasyPlayers = await prisma.fantasyPlayer.findMany({
+      where: { fantasyTeamId: fantasyTeam.id },
+      include: {
+        player: {
+          include: {
+            team: {
+              select: { id: true, name: true, shortName: true }
+            },
+            matchStats: {
+              where: {
+                matchId: { in: matchIds }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Format my players with their round stats
+    const myPlayers = fantasyPlayers.map(fp => {
+      const stats = fp.player.matchStats[0] || null;
+      return {
+        playerId: fp.player.id,
+        playerName: fp.player.name,
+        position: fp.player.position,
+        teamName: fp.player.team.name,
+        teamShortName: fp.player.team.shortName,
+        isStarter: fp.isStarter,
+        points: stats?.points || 0,
+        goals: stats?.goals || 0,
+        assists: stats?.assists || 0,
+        cleanSheet: stats?.cleanSheet || false,
+        yellowCards: stats?.yellowCards || 0,
+        redCards: stats?.redCards || 0,
+        bonusPoints: stats?.bonusPoints || 0,
+        minutesPlayed: stats?.minutesPlayed || 0,
+        played: !!stats
+      };
+    }).sort((a, b) => b.points - a.points);
+
+    // Calculate my stats
+    const myTotalPoints = myPlayers
+      .filter(p => p.isStarter)
+      .reduce((sum, p) => sum + p.points, 0);
+
+    // Calculate round statistics
+    const totalPoints = userRankings.reduce((sum, ph) => sum + ph.points, 0);
+    const avgPoints = userRankings.length > 0 ? Math.round(totalPoints / userRankings.length) : 0;
+    const highestPoints = userRankings.length > 0 ? userRankings[0].points : 0;
+    const lowestPoints = userRankings.length > 0 ? userRankings[userRankings.length - 1].points : 0;
+
+    res.json(formatResponse('success', 'تم جلب إحصائيات الجولة', {
+      round: {
+        id: round.id,
+        name: round.name,
+        roundNumber: round.roundNumber,
+        isCompleted: round.isCompleted
+      },
+      myStats: {
+        rank: myRank,
+        points: myPoints,
+        teamName: fantasyTeam.name,
+        totalPlayers: myPlayers.length,
+        playersPlayed: myPlayers.filter(p => p.played).length
+      },
+      statistics: {
+        totalParticipants: userRankings.length,
+        totalPoints,
+        averagePoints: avgPoints,
+        highestPoints,
+        lowestPoints
+      },
+      userRankings: formattedUserRankings,
+      topPlayers: formattedTopPlayers,
+      myPlayers
+    }));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createRound,
   getRounds,
@@ -501,5 +829,7 @@ module.exports = {
   toggleTransfers,
   completeRound,
   deleteRound,
-  getCurrentRound
+  getCurrentRound,
+  getRoundStats,
+  getMyRoundStats
 };

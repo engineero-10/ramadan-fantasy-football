@@ -12,6 +12,13 @@ const { formatResponse, validateFormation, calculateBudgetUsed } = require('../u
  */
 const createFantasyTeam = async (req, res, next) => {
   try {
+    // منع الأدمن من إنشاء فريق فانتازي - الأدمن للإدارة فقط
+    if (req.user.role === 'ADMIN') {
+      return res.status(403).json(
+        formatResponse('error', 'المشرف لا يمكنه إنشاء فريق خيالي - صلاحياته للإدارة فقط')
+      );
+    }
+
     const { name, leagueId, players } = req.body;
 
     // Check if user is member of league
@@ -137,6 +144,50 @@ const createFantasyTeam = async (req, res, next) => {
     res.status(201).json(
       formatResponse('success', 'تم إنشاء الفريق الخيالي بنجاح', fantasyTeam)
     );
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get all fantasy teams for current user
+ * GET /api/fantasy-teams/my-all
+ */
+const getAllMyFantasyTeams = async (req, res, next) => {
+  try {
+    const fantasyTeams = await prisma.fantasyTeam.findMany({
+      where: { userId: req.user.id },
+      include: {
+        league: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            budget: true,
+            playersPerTeam: true,
+            startingPlayers: true,
+            substitutes: true,
+            maxPlayersPerRealTeam: true,
+            maxTransfersPerRound: true,
+            _count: { select: { members: true } }
+          }
+        },
+        players: {
+          include: {
+            player: {
+              include: {
+                team: { select: { id: true, name: true, shortName: true } }
+              }
+            }
+          },
+          orderBy: [{ isStarter: 'desc' }, { position: 'asc' }]
+        },
+        _count: { select: { pointsHistory: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(formatResponse('success', 'تم جلب جميع الفرق', { fantasyTeams }));
   } catch (error) {
     next(error);
   }
@@ -502,6 +553,7 @@ const getRoundPoints = async (req, res, next) => {
 
 module.exports = {
   createFantasyTeam,
+  getAllMyFantasyTeams,
   getMyFantasyTeam,
   getFantasyTeam,
   updateFantasyTeam,

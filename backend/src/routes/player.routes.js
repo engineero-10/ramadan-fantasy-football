@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const playerController = require('../controllers/player.controller');
-const { authenticate, isAdmin } = require('../middleware/auth');
+const { authenticate } = require('../middleware/auth');
 const validate = require('../middleware/validate');
 const { createPlayerValidator, idParamValidator } = require('../validators');
 
@@ -16,9 +16,9 @@ router.get('/', playerController.getPlayers);
 router.get('/top/:leagueId', playerController.getTopPlayers);
 router.get('/:id', idParamValidator, validate, playerController.getPlayer);
 
-// Admin routes
-router.post('/', isAdmin, createPlayerValidator, validate, playerController.createPlayer);
-router.put('/:id', isAdmin, idParamValidator, validate, playerController.updatePlayer);
-router.delete('/:id', isAdmin, idParamValidator, validate, playerController.deletePlayer);
+// Admin routes (permission checked in controller via hasLeagueAccess)
+router.post('/', createPlayerValidator, validate, playerController.createPlayer);
+router.put('/:id', idParamValidator, validate, playerController.updatePlayer);
+router.delete('/:id', idParamValidator, validate, playerController.deletePlayer);
 
 module.exports = router;

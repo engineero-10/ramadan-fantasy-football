@@ -4,7 +4,7 @@
  */
 
 const prisma = require('../config/database');
-const { formatResponse, paginate, paginationMeta } = require('../utils/helpers');
+const { formatResponse, paginate, paginationMeta, hasLeagueAccess } = require('../utils/helpers');
 
 /**
  * Create player (Admin only)
@@ -25,7 +25,7 @@ const createPlayer = async (req, res, next) => {
       );
     }
 
-    if (league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بإضافة لاعبين لهذا الدوري')
       );
@@ -275,7 +275,7 @@ const updatePlayer = async (req, res, next) => {
       );
     }
 
-    if (player.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, player.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بتعديل هذا اللاعب')
       );
@@ -323,7 +323,7 @@ const deletePlayer = async (req, res, next) => {
       );
     }
 
-    if (player.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, player.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بحذف هذا اللاعب')
       );

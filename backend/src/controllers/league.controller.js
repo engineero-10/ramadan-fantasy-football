@@ -7,11 +7,19 @@ const prisma = require('../config/database');
 const { formatResponse, generateLeagueCode, paginate, paginationMeta } = require('../utils/helpers');
 
 /**
- * Create new league (Admin only)
+ * Create new league (Admin only - ONE league per system)
  * POST /api/leagues
  */
 const createLeague = async (req, res, next) => {
   try {
+    // التحقق من عدم وجود دوري سابق - مسموح بدوري واحد فقط
+    const existingLeague = await prisma.league.findFirst();
+    if (existingLeague) {
+      return res.status(400).json(
+        formatResponse('error', 'لا يمكن إنشاء أكثر من دوري واحد في النظام')
+      );
+    }
+
     const {
       name,
       description,
@@ -65,13 +73,7 @@ const createLeague = async (req, res, next) => {
       }
     });
 
-    // Auto-join creator as member
-    await prisma.leagueMember.create({
-      data: {
-        userId: req.user.id,
-        leagueId: league.id
-      }
-    });
+    // الأدمن لا ينضم كعضو - فقط للإدارة
 
     res.status(201).json(
       formatResponse('success', 'تم إنشاء الدوري بنجاح', { league })
@@ -87,13 +89,17 @@ const createLeague = async (req, res, next) => {
  */
 const getLeagues = async (req, res, next) => {
   try {
-    const { page = 1, limit = 10, myLeagues } = req.query;
+    const { page = 1, limit = 10, myLeagues, all } = req.query;
     const { skip, take } = paginate(parseInt(page), parseInt(limit));
 
     let where = {};
     
-    // Filter for user's leagues
-    if (myLeagues === 'true' && req.user) {
+    // للمستخدم العادي: يظهر فقط الدوريات المشترك فيها (إلا إذا طلب all=true للانضمام لدوري جديد)
+    // للأدمن: يظهر الكل دائماً
+    const isAdmin = req.user?.role === 'ADMIN';
+    const showOnlyMyLeagues = !isAdmin && all !== 'true';
+    
+    if (showOnlyMyLeagues || myLeagues === 'true') {
       where = {
         OR: [
           { createdById: req.user.id },
@@ -298,6 +304,13 @@ const deleteLeague = async (req, res, next) => {
  */
 const joinLeague = async (req, res, next) => {
   try {
+    // منع الأدمن من الانضمام للدوريات - الأدمن للإدارة فقط
+    if (req.user.role === 'ADMIN') {
+      return res.status(403).json(
+        formatResponse('error', 'المشرف لا يمكنه الانضمام للدوريات - صلاحياته للإدارة فقط')
+      );
+    }
+
     const { code } = req.body;
 
     const league = await prisma.league.findUnique({
@@ -378,10 +391,139 @@ const getLeagueMembers = async (req, res, next) => {
           }
         }
       },
-      orderBy: { joinedAt: 'asc' }
+      orderBy: [
+        { role: 'asc' }, // الأدمنز أولاً
+        { joinedAt: 'asc' }
+      ]
     });
 
-    res.json(formatResponse('success', 'تم جلب أعضاء الدوري', members));
+    res.json(formatResponse('success', 'تم جلب أعضاء الدوري', { members }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update member role (promote/demote to admin)
+ * PUT /api/leagues/:id/members/:userId/role
+ */
+const updateMemberRole = async (req, res, next) => {
+  try {
+    const { id, userId } = req.params;
+    const { role } = req.body; // 'ADMIN' or 'MEMBER'
+
+    // التحقق من أن المستخدم الحالي أدمن في الدوري أو الأدمن الرئيسي
+    const league = await prisma.league.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!league) {
+      return res.status(404).json(
+        formatResponse('error', 'الدوري غير موجود')
+      );
+    }
+
+    // التحقق من الصلاحيات
+    const isMainAdmin = req.user.role === 'ADMIN';
+    const isLeagueAdmin = await prisma.leagueMember.findFirst({
+      where: {
+        leagueId: parseInt(id),
+        userId: req.user.id,
+        role: 'ADMIN'
+      }
+    });
+
+    if (!isMainAdmin && !isLeagueAdmin) {
+      return res.status(403).json(
+        formatResponse('error', 'غير مسموح بتغيير صلاحيات الأعضاء')
+      );
+    }
+
+    // التحقق من وجود العضو في الدوري
+    const member = await prisma.leagueMember.findUnique({
+      where: {
+        userId_leagueId: {
+          userId: parseInt(userId),
+          leagueId: parseInt(id)
+        }
+      }
+    });
+
+    if (!member) {
+      return res.status(404).json(
+        formatResponse('error', 'العضو غير موجود في هذا الدوري')
+      );
+    }
+
+    // لا يمكن للأدمن إزالة صلاحياته الخاصة
+    if (parseInt(userId) === req.user.id && role === 'MEMBER') {
+      return res.status(400).json(
+        formatResponse('error', 'لا يمكنك إزالة صلاحيات الأدمن من نفسك')
+      );
+    }
+
+    // تحديث الدور
+    const updatedMember = await prisma.leagueMember.update({
+      where: {
+        userId_leagueId: {
+          userId: parseInt(userId),
+          leagueId: parseInt(id)
+        }
+      },
+      data: { role },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true }
+        }
+      }
+    });
+
+    const message = role === 'ADMIN' ? 'تم ترقية العضو لمشرف' : 'تم إزالة صلاحيات المشرف';
+    res.json(formatResponse('success', message, { member: updatedMember }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Get leagues where user is admin (league admin or creator)
+ * GET /api/leagues/my-admin-leagues
+ */
+const getMyAdminLeagues = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    // جلب الدوريات التي أنشأها المستخدم أو هو أدمن فيها
+    const leagues = await prisma.league.findMany({
+      where: {
+        OR: [
+          { createdById: userId },
+          {
+            members: {
+              some: {
+                userId: userId,
+                role: 'ADMIN'
+              }
+            }
+          }
+        ]
+      },
+      include: {
+        createdBy: {
+          select: { id: true, name: true }
+        },
+        _count: {
+          select: {
+            members: true,
+            teams: true,
+            rounds: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json(formatResponse('success', 'تم جلب الدوريات', { leagues }));
   } catch (error) {
     next(error);
   }
@@ -401,6 +543,11 @@ const getLeagueByCode = async (req, res, next) => {
         id: true,
         name: true,
         description: true,
+        code: true,
+        budget: true,
+        startingPlayers: true,
+        substitutes: true,
+        maxTeams: true,
         isActive: true,
         _count: {
           select: { members: true }
@@ -414,7 +561,7 @@ const getLeagueByCode = async (req, res, next) => {
       );
     }
 
-    res.json(formatResponse('success', 'تم جلب بيانات الدوري', league));
+    res.json(formatResponse('success', 'تم جلب بيانات الدوري', { league }));
   } catch (error) {
     next(error);
   }
@@ -428,5 +575,7 @@ module.exports = {
   deleteLeague,
   joinLeague,
   getLeagueMembers,
+  updateMemberRole,
+  getMyAdminLeagues,
   getLeagueByCode
 };

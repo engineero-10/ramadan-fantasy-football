@@ -4,7 +4,7 @@
  */
 
 const prisma = require('../config/database');
-const { formatResponse, paginate, paginationMeta } = require('../utils/helpers');
+const { formatResponse, paginate, paginationMeta, hasLeagueAccess } = require('../utils/helpers');
 
 /**
  * Create team (Admin only)
@@ -25,7 +25,7 @@ const createTeam = async (req, res, next) => {
       );
     }
 
-    if (league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بإضافة فرق لهذا الدوري')
       );
@@ -49,7 +49,7 @@ const createTeam = async (req, res, next) => {
 };
 
 /**
- * Get teams by league
+ * Get teams by league (or all teams for admin)
  * GET /api/teams
  */
 const getTeams = async (req, res, next) => {
@@ -57,25 +57,25 @@ const getTeams = async (req, res, next) => {
     const { leagueId, page = 1, limit = 20 } = req.query;
     const { skip, take } = paginate(parseInt(page), parseInt(limit));
 
-    if (!leagueId) {
-      return res.status(400).json(
-        formatResponse('error', 'معرف الدوري مطلوب')
-      );
-    }
+    // بناء شرط البحث - leagueId اختياري للمشرفين
+    const where = leagueId ? { leagueId: parseInt(leagueId) } : {};
 
     const [teams, total] = await Promise.all([
       prisma.team.findMany({
-        where: { leagueId: parseInt(leagueId) },
+        where,
         skip,
         take,
         include: {
+          league: {
+            select: { id: true, name: true }
+          },
           _count: {
             select: { players: true }
           }
         },
         orderBy: { name: 'asc' }
       }),
-      prisma.team.count({ where: { leagueId: parseInt(leagueId) } })
+      prisma.team.count({ where })
     ]);
 
     res.json(
@@ -145,7 +145,7 @@ const updateTeam = async (req, res, next) => {
       );
     }
 
-    if (team.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, team.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بتعديل هذا الفريق')
       );
@@ -181,7 +181,7 @@ const deleteTeam = async (req, res, next) => {
       );
     }
 
-    if (team.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, team.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بحذف هذا الفريق')
       );

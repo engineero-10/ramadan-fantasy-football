@@ -13,6 +13,7 @@ router.use(authenticate);
 
 // User routes
 router.post('/', createFantasyTeamValidator, validate, fantasyTeamController.createFantasyTeam);
+router.get('/my-all', fantasyTeamController.getAllMyFantasyTeams); // Get all user's fantasy teams
 router.get('/my', fantasyTeamController.getMyFantasyTeam); // Get user's first fantasy team
 router.get('/:leagueId', fantasyTeamController.getMyFantasyTeam);
 router.get('/team/:id', idParamValidator, validate, fantasyTeamController.getFantasyTeam);

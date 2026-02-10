@@ -4,7 +4,7 @@
  */
 
 const prisma = require('../config/database');
-const { formatResponse, paginate, paginationMeta } = require('../utils/helpers');
+const { formatResponse, paginate, paginationMeta, hasLeagueAccess } = require('../utils/helpers');
 const { calculatePlayerPoints } = require('../config/points');
 
 /**
@@ -27,7 +27,7 @@ const createMatch = async (req, res, next) => {
       );
     }
 
-    if (round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بإضافة مباريات لهذه الجولة')
       );
@@ -209,7 +209,7 @@ const updateMatch = async (req, res, next) => {
       );
     }
 
-    if (match.round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, match.round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بتعديل هذه المباراة')
       );
@@ -265,7 +265,7 @@ const updateMatchResult = async (req, res, next) => {
       );
     }
 
-    if (match.round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, match.round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بتعديل نتيجة هذه المباراة')
       );
@@ -314,7 +314,7 @@ const updateMatchStats = async (req, res, next) => {
       );
     }
 
-    if (match.round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, match.round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بتعديل إحصائيات هذه المباراة')
       );
@@ -414,7 +414,7 @@ const deleteMatch = async (req, res, next) => {
       );
     }
 
-    if (match.round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (!await hasLeagueAccess(req.user, match.round.league)) {
       return res.status(403).json(
         formatResponse('error', 'غير مسموح بحذف هذه المباراة')
       );
