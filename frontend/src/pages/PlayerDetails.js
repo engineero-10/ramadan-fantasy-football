@@ -4,10 +4,10 @@ import { playerAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const POSITIONS = {
-  GK: { name: 'حارس مرمى', icon: '🧤', color: 'bg-yellow-500' },
-  DEF: { name: 'مدافع', icon: '🛡️', color: 'bg-blue-500' },
-  MID: { name: 'وسط', icon: '🎯', color: 'bg-green-500' },
-  FWD: { name: 'مهاجم', icon: '⚽', color: 'bg-red-500' },
+  GOALKEEPER: { name: 'حارس مرمى', icon: '🧤', color: 'bg-yellow-500' },
+  DEFENDER: { name: 'مدافع', icon: '🛡️', color: 'bg-blue-500' },
+  MIDFIELDER: { name: 'وسط', icon: '🎯', color: 'bg-green-500' },
+  FORWARD: { name: 'مهاجم', icon: '⚽', color: 'bg-red-500' },
 };
 
 const PlayerDetails = () => {
@@ -21,7 +21,7 @@ const PlayerDetails = () => {
 
   const fetchPlayer = async () => {
     try {
-      const response = await playerAPI.getOne(id);
+      const response = await playerAPI.getById(id);
       setPlayer(response.data.player);
     } catch (error) {
       toast.error('خطأ في جلب بيانات اللاعب');
@@ -142,7 +142,7 @@ const PlayerDetails = () => {
             <p className="text-xl font-bold">{totalStats.redCards}</p>
             <p className="text-sm text-gray-600">بطاقات حمراء</p>
           </div>
-          {player.position === 'GK' && (
+          {player.position === 'GOALKEEPER' && (
             <>
               <div className="bg-green-50 rounded-xl p-4 text-center">
                 <p className="text-2xl">🛡️</p>

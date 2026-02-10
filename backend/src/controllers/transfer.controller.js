@@ -40,8 +40,7 @@ const createTransfer = async (req, res, next) => {
       );
     }
 
-    // Get current active round with transfers open
-    const now = new Date();
+    // Get current active round with transfers open (يتحكم فيه الأدمن يدوياً)
     const activeRound = await prisma.round.findFirst({
       where: {
         leagueId: fantasyTeam.leagueId,
@@ -53,14 +52,7 @@ const createTransfer = async (req, res, next) => {
 
     if (!activeRound) {
       return res.status(400).json(
-        formatResponse('error', 'الانتقالات مغلقة حالياً')
-      );
-    }
-
-    // Check if round is locked
-    if (activeRound.lockTime && now >= new Date(activeRound.lockTime)) {
-      return res.status(400).json(
-        formatResponse('error', 'تم إغلاق الانتقالات لهذه الجولة')
+        formatResponse('error', 'الانتقالات مغلقة حالياً - انتظر حتى يفتحها المشرف')
       );
     }
 
@@ -230,7 +222,7 @@ const getTransferHistory = async (req, res, next) => {
       orderBy: { transferDate: 'desc' }
     });
 
-    res.json(formatResponse('success', 'تم جلب سجل الانتقالات', transfers));
+    res.json(formatResponse('success', 'تم جلب سجل الانتقالات', { transfers }));
   } catch (error) {
     next(error);
   }
@@ -331,7 +323,7 @@ const getRoundTransfers = async (req, res, next) => {
       orderBy: { transferDate: 'desc' }
     });
 
-    res.json(formatResponse('success', 'تم جلب انتقالات الجولة', transfers));
+    res.json(formatResponse('success', 'تم جلب انتقالات الجولة', { transfers }));
   } catch (error) {
     next(error);
   }

@@ -16,6 +16,7 @@ import JoinLeague from './pages/JoinLeague';
 import CreateTeam from './pages/CreateTeam';
 import MyTeam from './pages/MyTeam';
 import Transfers from './pages/Transfers';
+import Rounds from './pages/Rounds';
 import Matches from './pages/Matches';
 import MatchDetails from './pages/MatchDetails';
 import Leaderboard from './pages/Leaderboard';
@@ -73,11 +74,17 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="join-league" element={<JoinLeague />} />
+          <Route path="create-team" element={<CreateTeam />} />
           <Route path="create-team/:leagueId" element={<CreateTeam />} />
+          <Route path="my-team" element={<MyTeam />} />
           <Route path="my-team/:leagueId" element={<MyTeam />} />
+          <Route path="transfers" element={<Transfers />} />
           <Route path="transfers/:leagueId" element={<Transfers />} />
+          <Route path="rounds" element={<Rounds />} />
+          <Route path="matches" element={<Matches />} />
           <Route path="matches/:leagueId" element={<Matches />} />
           <Route path="match/:matchId" element={<MatchDetails />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="leaderboard/:leagueId" element={<Leaderboard />} />
           <Route path="player/:playerId" element={<PlayerDetails />} />
         </Route>
@@ -93,11 +100,11 @@ function App() {
         >
           <Route index element={<AdminDashboard />} />
           <Route path="leagues" element={<ManageLeagues />} />
-          <Route path="teams/:leagueId" element={<ManageTeams />} />
-          <Route path="players/:leagueId" element={<ManagePlayers />} />
-          <Route path="rounds/:leagueId" element={<ManageRounds />} />
-          <Route path="matches/:leagueId" element={<ManageMatches />} />
-          <Route path="match-stats/:matchId" element={<MatchStats />} />
+          <Route path="teams" element={<ManageTeams />} />
+          <Route path="players" element={<ManagePlayers />} />
+          <Route path="rounds" element={<ManageRounds />} />
+          <Route path="matches" element={<ManageMatches />} />
+          <Route path="match-stats/:id" element={<MatchStats />} />
         </Route>
 
         {/* 404 */}

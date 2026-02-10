@@ -4,10 +4,10 @@ import { matchAPI, playerAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const POSITIONS = {
-  GK: { name: 'حارس', icon: '🧤' },
-  DEF: { name: 'مدافع', icon: '🛡️' },
-  MID: { name: 'وسط', icon: '🎯' },
-  FWD: { name: 'مهاجم', icon: '⚽' },
+  GOALKEEPER: { name: 'حارس', icon: '🧤' },
+  DEFENDER: { name: 'مدافع', icon: '🛡️' },
+  MIDFIELDER: { name: 'وسط', icon: '🎯' },
+  FORWARD: { name: 'مهاجم', icon: '⚽' },
 };
 
 const MatchStats = () => {
@@ -30,13 +30,14 @@ const MatchStats = () => {
   const fetchData = async () => {
     try {
       // جلب تفاصيل المباراة
-      const matchRes = await matchAPI.getOne(id);
-      setMatch(matchRes.data.match);
-      setExistingStats(matchRes.data.match.stats || []);
+      const matchRes = await matchAPI.getById(id);
+      const matchData = matchRes.data.match;
+      setMatch(matchData);
+      setExistingStats(matchData.matchStats || []);
 
       // تحويل الإحصائيات الموجودة لـ form state
       const statsMap = {};
-      (matchRes.data.match.stats || []).forEach(stat => {
+      (matchData.matchStats || []).forEach(stat => {
         statsMap[stat.playerId] = {
           id: stat.id,
           goals: stat.goals || 0,
@@ -44,19 +45,20 @@ const MatchStats = () => {
           yellowCards: stat.yellowCards || 0,
           redCards: stat.redCards || 0,
           cleanSheet: stat.cleanSheet || false,
-          penaltySaved: stat.penaltySaved || 0,
+          penaltySaves: stat.penaltySaves || 0,
           minutesPlayed: stat.minutesPlayed || 0,
+          bonusPoints: stat.bonusPoints || 0,
         };
       });
       setStatsForm(statsMap);
 
-      // جلب لاعبي الفريقين
-      if (matchRes.data.match.homeTeamId) {
-        const homePlayersRes = await playerAPI.getAll({ teamId: matchRes.data.match.homeTeamId });
+      // جلب لاعبي الفريقين (limit=100 لجلب كل لاعبي الفريق)
+      if (matchData.homeTeamId) {
+        const homePlayersRes = await playerAPI.getAll({ teamId: matchData.homeTeamId, limit: 100 });
         setHomePlayers(homePlayersRes.data.players || []);
       }
-      if (matchRes.data.match.awayTeamId) {
-        const awayPlayersRes = await playerAPI.getAll({ teamId: matchRes.data.match.awayTeamId });
+      if (matchData.awayTeamId) {
+        const awayPlayersRes = await playerAPI.getAll({ teamId: matchData.awayTeamId, limit: 100 });
         setAwayPlayers(awayPlayersRes.data.players || []);
       }
     } catch (error) {
@@ -89,11 +91,12 @@ const MatchStats = () => {
         stat.yellowCards > 0 || 
         stat.redCards > 0 || 
         stat.cleanSheet || 
-        stat.penaltySaved > 0 || 
-        stat.minutesPlayed > 0
+        stat.penaltySaves > 0 || 
+        stat.minutesPlayed > 0 ||
+        stat.bonusPoints !== 0
       );
 
-      await matchAPI.updateStats(id, { stats });
+      await matchAPI.updateStats(id, stats);
       toast.success('تم حفظ الإحصائيات بنجاح');
       fetchData();
     } catch (error) {
@@ -225,6 +228,7 @@ const MatchStats = () => {
                 <th className="text-center py-3 px-1">🛡️</th>
                 <th className="text-center py-3 px-1">🧤</th>
                 <th className="text-center py-3 px-1">⏱️</th>
+                <th className="text-center py-3 px-1" title="نقاط إضافية">➕</th>
               </tr>
             </thead>
             <tbody>
@@ -282,7 +286,7 @@ const MatchStats = () => {
                       />
                     </td>
                     <td className="text-center px-1">
-                      {player.position === 'GK' ? (
+                      {player.position === 'GOALKEEPER' ? (
                         <input
                           type="checkbox"
                           checked={playerStats.cleanSheet || false}
@@ -294,11 +298,11 @@ const MatchStats = () => {
                       )}
                     </td>
                     <td className="text-center px-1">
-                      {player.position === 'GK' ? (
+                      {player.position === 'GOALKEEPER' ? (
                         <input
                           type="number"
-                          value={playerStats.penaltySaved || 0}
-                          onChange={(e) => handleStatChange(player.id, 'penaltySaved', parseInt(e.target.value) || 0)}
+                          value={playerStats.penaltySaves || 0}
+                          onChange={(e) => handleStatChange(player.id, 'penaltySaves', parseInt(e.target.value) || 0)}
                           className="w-12 text-center border rounded py-1"
                           min={0}
                         />
@@ -314,6 +318,15 @@ const MatchStats = () => {
                         className="w-14 text-center border rounded py-1"
                         min={0}
                         max={120}
+                      />
+                    </td>
+                    <td className="text-center px-1">
+                      <input
+                        type="number"
+                        value={playerStats.bonusPoints || 0}
+                        onChange={(e) => handleStatChange(player.id, 'bonusPoints', parseInt(e.target.value) || 0)}
+                        className="w-14 text-center border rounded py-1 bg-yellow-50"
+                        title="نقاط إضافية يدوية"
                       />
                     </td>
                   </tr>

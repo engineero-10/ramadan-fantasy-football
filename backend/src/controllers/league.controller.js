@@ -74,7 +74,7 @@ const createLeague = async (req, res, next) => {
     });
 
     res.status(201).json(
-      formatResponse('success', 'تم إنشاء الدوري بنجاح', league)
+      formatResponse('success', 'تم إنشاء الدوري بنجاح', { league })
     );
   } catch (error) {
     next(error);
@@ -251,7 +251,7 @@ const updateLeague = async (req, res, next) => {
       }
     });
 
-    res.json(formatResponse('success', 'تم تحديث الدوري بنجاح', league));
+    res.json(formatResponse('success', 'تم تحديث الدوري بنجاح', { league }));
   } catch (error) {
     next(error);
   }

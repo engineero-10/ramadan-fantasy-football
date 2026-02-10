@@ -84,8 +84,10 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`
   ╔════════════════════════════════════════════════════════════╗
   ║                                                            ║
   ║   🏆 Ramadan Fantasy Football API                          ║
@@ -93,7 +95,8 @@ app.listen(PORT, () => {
   ║   📅 ${new Date().toISOString()}                   ║
   ║                                                            ║
   ╚════════════════════════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+}
 
 module.exports = app;

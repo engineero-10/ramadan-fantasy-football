@@ -11,10 +11,11 @@ const ManageRounds = () => {
   const [editingRound, setEditingRound] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    roundNumber: '',
     leagueId: '',
     startDate: '',
     endDate: '',
-    transferDeadline: '',
+    lockTime: '',
   });
 
   useEffect(() => {
@@ -56,9 +57,10 @@ const ManageRounds = () => {
     try {
       const data = {
         ...formData,
+        roundNumber: parseInt(formData.roundNumber),
         startDate: formData.startDate ? new Date(formData.startDate).toISOString() : null,
         endDate: formData.endDate ? new Date(formData.endDate).toISOString() : null,
-        transferDeadline: formData.transferDeadline ? new Date(formData.transferDeadline).toISOString() : null,
+        lockTime: formData.lockTime ? new Date(formData.lockTime).toISOString() : null,
       };
       
       if (editingRound) {
@@ -80,10 +82,11 @@ const ManageRounds = () => {
     setEditingRound(round);
     setFormData({
       name: round.name,
+      roundNumber: round.roundNumber,
       leagueId: round.leagueId,
       startDate: round.startDate ? new Date(round.startDate).toISOString().slice(0, 16) : '',
       endDate: round.endDate ? new Date(round.endDate).toISOString().slice(0, 16) : '',
-      transferDeadline: round.transferDeadline ? new Date(round.transferDeadline).toISOString().slice(0, 16) : '',
+      lockTime: round.lockTime ? new Date(round.lockTime).toISOString().slice(0, 16) : '',
     });
     setShowModal(true);
   };
@@ -126,10 +129,11 @@ const ManageRounds = () => {
     setEditingRound(null);
     setFormData({
       name: '',
+      roundNumber: '',
       leagueId: selectedLeague || '',
       startDate: '',
       endDate: '',
-      transferDeadline: '',
+      lockTime: '',
     });
   };
 
@@ -255,7 +259,7 @@ const ManageRounds = () => {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">موعد إغلاق الانتقالات</p>
-                    <p className="text-sm">{formatDate(round.transferDeadline)}</p>
+                    <p className="text-sm">{formatDate(round.lockTime)}</p>
                   </div>
                 </div>
 
@@ -302,6 +306,21 @@ const ManageRounds = () => {
                   className="input"
                   placeholder="مثال: الجولة الأولى"
                   required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  رقم الجولة *
+                </label>
+                <input
+                  type="number"
+                  value={formData.roundNumber}
+                  onChange={(e) => setFormData({ ...formData, roundNumber: e.target.value })}
+                  className="input"
+                  placeholder="مثال: 1"
+                  required
+                  min="1"
                 />
               </div>
 
@@ -354,8 +373,8 @@ const ManageRounds = () => {
                 </label>
                 <input
                   type="datetime-local"
-                  value={formData.transferDeadline}
-                  onChange={(e) => setFormData({ ...formData, transferDeadline: e.target.value })}
+                  value={formData.lockTime}
+                  onChange={(e) => setFormData({ ...formData, lockTime: e.target.value })}
                   className="input"
                 />
               </div>

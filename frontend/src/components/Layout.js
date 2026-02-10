@@ -15,6 +15,11 @@ const Layout = () => {
 
   const navItems = [
     { path: '/dashboard', label: 'الرئيسية', icon: '🏠' },
+    { path: '/my-team', label: 'فريقي', icon: '⭐' },
+    { path: '/rounds', label: 'الجولات', icon: '📅' },
+    { path: '/transfers', label: 'الانتقالات', icon: '🔄' },
+    { path: '/matches', label: 'المباريات', icon: '⚽' },
+    { path: '/leaderboard', label: 'الترتيب', icon: '🏆' },
     { path: '/join-league', label: 'انضم لدوري', icon: '🎯' }
   ];
 

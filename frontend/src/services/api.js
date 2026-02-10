@@ -54,7 +54,7 @@ export const leagueAPI = {
 
 // ==================== TEAMS ====================
 export const teamAPI = {
-  getAll: (leagueId) => api.get('/teams', { params: { leagueId } }),
+  getAll: (params) => api.get('/teams', { params }),
   getById: (id) => api.get(`/teams/${id}`),
   create: (data) => api.post('/teams', data),
   update: (id, data) => api.put(`/teams/${id}`, data),
@@ -76,6 +76,7 @@ export const matchAPI = {
   getAll: (params) => api.get('/matches', { params }),
   getById: (id) => api.get(`/matches/${id}`),
   create: (data) => api.post('/matches', data),
+  update: (id, data) => api.put(`/matches/${id}`, data),
   updateResult: (id, data) => api.put(`/matches/${id}/result`, data),
   updateStats: (id, stats) => api.put(`/matches/${id}/stats`, { stats }),
   delete: (id) => api.delete(`/matches/${id}`)
@@ -95,7 +96,7 @@ export const roundAPI = {
 
 // ==================== FANTASY TEAMS ====================
 export const fantasyTeamAPI = {
-  getMyTeam: (leagueId) => api.get(`/fantasy-teams/${leagueId}`),
+  getMyTeam: (leagueId) => api.get(leagueId ? `/fantasy-teams/${leagueId}` : '/fantasy-teams/my'),
   getById: (id) => api.get(`/fantasy-teams/team/${id}`),
   create: (data) => api.post('/fantasy-teams', data),
   update: (id, data) => api.put(`/fantasy-teams/${id}`, data),

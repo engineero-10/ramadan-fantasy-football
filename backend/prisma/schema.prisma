@@ -205,6 +205,7 @@ model MatchStat {
   redCards        Int       @default(0)
   cleanSheet      Boolean   @default(false)
   penaltySaves    Int       @default(0)
+  bonusPoints     Int       @default(0)
   points          Int       @default(0)
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

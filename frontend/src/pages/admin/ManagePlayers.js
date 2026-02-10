@@ -3,10 +3,10 @@ import { playerAPI, teamAPI, leagueAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const POSITIONS = [
-  { value: 'GK', label: 'حارس مرمى', icon: '🧤' },
-  { value: 'DEF', label: 'مدافع', icon: '🛡️' },
-  { value: 'MID', label: 'وسط', icon: '🎯' },
-  { value: 'FWD', label: 'مهاجم', icon: '⚽' },
+  { value: 'GOALKEEPER', label: 'حارس مرمى', icon: '🧤' },
+  { value: 'DEFENDER', label: 'مدافع', icon: '🛡️' },
+  { value: 'MIDFIELDER', label: 'وسط', icon: '🎯' },
+  { value: 'FORWARD', label: 'مهاجم', icon: '⚽' },
 ];
 
 const ManagePlayers = () => {
@@ -22,8 +22,9 @@ const ManagePlayers = () => {
   const [editingPlayer, setEditingPlayer] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    position: 'MID',
+    position: 'MIDFIELDER',
     teamId: '',
+    price: '5',
     shirtNumber: '',
   });
 
@@ -65,7 +66,7 @@ const ManagePlayers = () => {
   const fetchPlayers = async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { limit: 1000 }; // جلب كل اللاعبين
       if (selectedLeague) params.leagueId = selectedLeague;
       if (selectedTeam) params.teamId = selectedTeam;
       if (positionFilter) params.position = positionFilter;
@@ -84,6 +85,8 @@ const ManagePlayers = () => {
     try {
       const data = {
         ...formData,
+        price: parseFloat(formData.price),
+        leagueId: selectedLeague,
         shirtNumber: formData.shirtNumber ? parseInt(formData.shirtNumber) : null,
       };
       
@@ -108,6 +111,7 @@ const ManagePlayers = () => {
       name: player.name,
       position: player.position,
       teamId: player.teamId,
+      price: player.price || '5',
       shirtNumber: player.shirtNumber || '',
     });
     setShowModal(true);
@@ -129,8 +133,9 @@ const ManagePlayers = () => {
     setEditingPlayer(null);
     setFormData({
       name: '',
-      position: 'MID',
+      position: 'MIDFIELDER',
       teamId: teams[0]?.id || '',
+      price: '5',
       shirtNumber: '',
     });
   };
@@ -232,6 +237,7 @@ const ManagePlayers = () => {
                   <th className="text-right py-3">اللاعب</th>
                   <th className="text-center py-3">المركز</th>
                   <th className="text-center py-3">الفريق</th>
+                  <th className="text-center py-3">السعر</th>
                   <th className="text-center py-3">الرقم</th>
                   <th className="text-center py-3">النقاط</th>
                   <th className="text-center py-3">إجراءات</th>
@@ -255,6 +261,11 @@ const ManagePlayers = () => {
                       </td>
                       <td className="text-center text-sm text-gray-600">
                         {player.team?.name}
+                      </td>
+                      <td className="text-center">
+                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm font-bold">
+                          {player.price}M
+                        </span>
                       </td>
                       <td className="text-center">
                         {player.shirtNumber || '-'}
@@ -381,6 +392,24 @@ const ManagePlayers = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  السعر * (الحد الأقصى 10)
+                </label>
+                <input
+                  type="number"
+                  value={formData.price}
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                  className="input"
+                  min={0.5}
+                  max={10}
+                  step={0.5}
+                  placeholder="مثال: 5"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">السعر بالمليون (0.5 - 10)</p>
               </div>
 
               <div>

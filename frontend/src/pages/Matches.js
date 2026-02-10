@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const MATCH_STATUS = {
   SCHEDULED: { label: 'مجدولة', color: 'bg-blue-100 text-blue-700', icon: '📅' },
   LIVE: { label: 'جارية', color: 'bg-green-100 text-green-700', icon: '🔴' },
-  FINISHED: { label: 'انتهت', color: 'bg-gray-100 text-gray-700', icon: '✅' },
+  COMPLETED: { label: 'انتهت', color: 'bg-gray-100 text-gray-700', icon: '✅' },
   POSTPONED: { label: 'مؤجلة', color: 'bg-yellow-100 text-yellow-700', icon: '⏸️' },
   CANCELLED: { label: 'ملغاة', color: 'bg-red-100 text-red-700', icon: '❌' },
 };
@@ -155,7 +155,7 @@ const Matches = () => {
 const MatchCard = ({ match }) => {
   const status = MATCH_STATUS[match.status] || MATCH_STATUS.SCHEDULED;
   const matchDate = new Date(match.matchDate);
-  const isFinished = match.status === 'FINISHED';
+  const isFinished = match.status === 'COMPLETED';
 
   return (
     <Link 

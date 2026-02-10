@@ -22,6 +22,7 @@ router.get('/:id', idParamValidator, validate, matchController.getMatch);
 
 // Admin routes
 router.post('/', isAdmin, createMatchValidator, validate, matchController.createMatch);
+router.put('/:id', isAdmin, idParamValidator, validate, matchController.updateMatch);
 router.put('/:id/result', isAdmin, idParamValidator, updateMatchResultValidator, validate, matchController.updateMatchResult);
 router.put('/:id/stats', isAdmin, idParamValidator, updateMatchStatsValidator, validate, matchController.updateMatchStats);
 router.delete('/:id', isAdmin, idParamValidator, validate, matchController.deleteMatch);

@@ -65,7 +65,7 @@ const createPlayer = async (req, res, next) => {
     });
 
     res.status(201).json(
-      formatResponse('success', 'تم إنشاء اللاعب بنجاح', player)
+      formatResponse('success', 'تم إنشاء اللاعب بنجاح', { player })
     );
   } catch (error) {
     next(error);
@@ -89,9 +89,21 @@ const getPlayers = async (req, res, next) => {
       limit = 20 
     } = req.query;
 
-    if (!leagueId) {
+    // If teamId provided but no leagueId, get leagueId from team
+    let actualLeagueId = leagueId;
+    if (teamId && !leagueId) {
+      const team = await prisma.team.findUnique({
+        where: { id: parseInt(teamId) },
+        select: { leagueId: true }
+      });
+      if (team) {
+        actualLeagueId = team.leagueId;
+      }
+    }
+
+    if (!actualLeagueId && !teamId) {
       return res.status(400).json(
-        formatResponse('error', 'معرف الدوري مطلوب')
+        formatResponse('error', 'معرف الدوري أو الفريق مطلوب')
       );
     }
 
@@ -99,9 +111,12 @@ const getPlayers = async (req, res, next) => {
 
     // Build where clause
     const where = {
-      leagueId: parseInt(leagueId),
       isActive: true
     };
+
+    if (actualLeagueId) {
+      where.leagueId = parseInt(actualLeagueId);
+    }
 
     if (teamId) {
       where.teamId = parseInt(teamId);
@@ -230,8 +245,10 @@ const getPlayer = async (req, res, next) => {
     });
 
     res.json(formatResponse('success', 'تم جلب بيانات اللاعب', {
-      ...player,
-      totalStats
+      player: {
+        ...player,
+        totalStats
+      }
     }));
   } catch (error) {
     next(error);
@@ -281,7 +298,7 @@ const updatePlayer = async (req, res, next) => {
       }
     });
 
-    res.json(formatResponse('success', 'تم تحديث اللاعب بنجاح', updatedPlayer));
+    res.json(formatResponse('success', 'تم تحديث اللاعب بنجاح', { player: updatedPlayer }));
   } catch (error) {
     next(error);
   }

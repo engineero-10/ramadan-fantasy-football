@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const MATCH_STATUS = {
   SCHEDULED: { label: 'مجدولة', color: 'bg-blue-100 text-blue-700' },
   LIVE: { label: 'جارية', color: 'bg-green-100 text-green-700' },
-  FINISHED: { label: 'انتهت', color: 'bg-gray-100 text-gray-700' },
+  COMPLETED: { label: 'انتهت', color: 'bg-gray-100 text-gray-700' },
   POSTPONED: { label: 'مؤجلة', color: 'bg-yellow-100 text-yellow-700' },
   CANCELLED: { label: 'ملغاة', color: 'bg-red-100 text-red-700' },
 };
@@ -32,7 +32,7 @@ const MatchDetails = () => {
 
   const fetchMatch = async () => {
     try {
-      const response = await matchAPI.getOne(id);
+      const response = await matchAPI.getById(id);
       setMatch(response.data.match);
     } catch (error) {
       toast.error('خطأ في جلب تفاصيل المباراة');
@@ -66,7 +66,7 @@ const MatchDetails = () => {
 
   const status = MATCH_STATUS[match.status] || MATCH_STATUS.SCHEDULED;
   const matchDate = new Date(match.matchDate);
-  const isFinished = match.status === 'FINISHED';
+  const isFinished = match.status === 'COMPLETED';
 
   // تجميع الإحصائيات حسب الفريق
   const homeStats = match.stats?.filter(s => s.player?.teamId === match.homeTeamId) || [];

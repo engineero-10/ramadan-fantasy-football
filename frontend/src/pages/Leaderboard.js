@@ -153,7 +153,7 @@ const Leaderboard = () => {
             <div className="text-center">
               <p className="text-3xl mb-2">📊</p>
               <p className="text-sm text-gray-600">متوسط النقاط</p>
-              <p className="font-bold">{stats.averagePoints?.toFixed(1) || 0}</p>
+              <p className="font-bold">{parseFloat(stats.averagePoints || 0).toFixed(1)}</p>
               <p className="text-xs text-gray-500">نقطة</p>
             </div>
           </div>

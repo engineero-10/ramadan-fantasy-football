@@ -41,7 +41,7 @@ const createTeam = async (req, res, next) => {
     });
 
     res.status(201).json(
-      formatResponse('success', 'تم إنشاء الفريق بنجاح', team)
+      formatResponse('success', 'تم إنشاء الفريق بنجاح', { team })
     );
   } catch (error) {
     next(error);
@@ -119,7 +119,7 @@ const getTeam = async (req, res, next) => {
       );
     }
 
-    res.json(formatResponse('success', 'تم جلب بيانات الفريق', team));
+    res.json(formatResponse('success', 'تم جلب بيانات الفريق', { team }));
   } catch (error) {
     next(error);
   }
@@ -156,7 +156,7 @@ const updateTeam = async (req, res, next) => {
       data: { name, shortName, logo }
     });
 
-    res.json(formatResponse('success', 'تم تحديث الفريق بنجاح', updatedTeam));
+    res.json(formatResponse('success', 'تم تحديث الفريق بنجاح', { team: updatedTeam }));
   } catch (error) {
     next(error);
   }

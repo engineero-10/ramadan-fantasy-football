@@ -70,7 +70,7 @@ const createMatch = async (req, res, next) => {
     });
 
     res.status(201).json(
-      formatResponse('success', 'تم إنشاء المباراة بنجاح', match)
+      formatResponse('success', 'تم إنشاء المباراة بنجاح', { match })
     );
   } catch (error) {
     next(error);
@@ -178,10 +178,68 @@ const getMatch = async (req, res, next) => {
     const awayStats = match.matchStats.filter(s => s.player.teamId === match.awayTeamId);
 
     res.json(formatResponse('success', 'تم جلب بيانات المباراة', {
-      ...match,
-      homeTeamStats: homeStats,
-      awayTeamStats: awayStats
+      match: {
+        ...match,
+        homeTeamStats: homeStats,
+        awayTeamStats: awayStats
+      }
     }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update match (Admin only)
+ * PUT /api/matches/:id
+ */
+const updateMatch = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { homeTeamId, awayTeamId, roundId, matchDate, location } = req.body;
+
+    const match = await prisma.match.findUnique({
+      where: { id: parseInt(id) },
+      include: { round: { include: { league: true } } }
+    });
+
+    if (!match) {
+      return res.status(404).json(
+        formatResponse('error', 'المباراة غير موجودة')
+      );
+    }
+
+    if (match.round.league.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json(
+        formatResponse('error', 'غير مسموح بتعديل هذه المباراة')
+      );
+    }
+
+    // Validate teams if changed
+    if (homeTeamId && awayTeamId && homeTeamId === awayTeamId) {
+      return res.status(400).json(
+        formatResponse('error', 'لا يمكن للفريق أن يلعب ضد نفسه')
+      );
+    }
+
+    const updateData = {};
+    if (homeTeamId) updateData.homeTeamId = parseInt(homeTeamId);
+    if (awayTeamId) updateData.awayTeamId = parseInt(awayTeamId);
+    if (roundId) updateData.roundId = parseInt(roundId);
+    if (matchDate) updateData.matchDate = new Date(matchDate);
+    if (location !== undefined) updateData.location = location;
+
+    const updatedMatch = await prisma.match.update({
+      where: { id: parseInt(id) },
+      data: updateData,
+      include: {
+        homeTeam: { select: { id: true, name: true, shortName: true } },
+        awayTeam: { select: { id: true, name: true, shortName: true } },
+        round: { select: { id: true, name: true, roundNumber: true } }
+      }
+    });
+
+    res.json(formatResponse('success', 'تم تحديث المباراة بنجاح', { match: updatedMatch }));
   } catch (error) {
     next(error);
   }
@@ -280,7 +338,7 @@ const updateMatchStats = async (req, res, next) => {
           (!isHomeTeam && match.homeScore === 0)));
 
       // Calculate points
-      const points = calculatePlayerPoints({
+      const basePoints = calculatePlayerPoints({
         minutesPlayed: stat.minutesPlayed || 0,
         goals: stat.goals || 0,
         assists: stat.assists || 0,
@@ -289,6 +347,10 @@ const updateMatchStats = async (req, res, next) => {
         cleanSheet,
         penaltySaves: stat.penaltySaves || 0
       }, player.position);
+
+      // Add bonus points (manual points)
+      const bonusPoints = stat.bonusPoints || 0;
+      const points = basePoints + bonusPoints;
 
       // Upsert stat
       const matchStat = await prisma.matchStat.upsert({
@@ -306,6 +368,7 @@ const updateMatchStats = async (req, res, next) => {
           redCards: stat.redCards || 0,
           cleanSheet,
           penaltySaves: stat.penaltySaves || 0,
+          bonusPoints,
           points
         },
         create: {
@@ -318,6 +381,7 @@ const updateMatchStats = async (req, res, next) => {
           redCards: stat.redCards || 0,
           cleanSheet,
           penaltySaves: stat.penaltySaves || 0,
+          bonusPoints,
           points
         }
       });
@@ -370,6 +434,7 @@ module.exports = {
   createMatch,
   getMatches,
   getMatch,
+  updateMatch,
   updateMatchResult,
   updateMatchStats,
   deleteMatch

@@ -1,12 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { fantasyTeamAPI, playerAPI, transferAPI, roundAPI } from '../services/api';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 const POSITIONS = {
-  GK: { name: 'حارس مرمى', icon: '🧤' },
-  DEF: { name: 'مدافع', icon: '🛡️' },
-  MID: { name: 'وسط', icon: '🎯' },
-  FWD: { name: 'مهاجم', icon: '⚽' },
+  GOALKEEPER: { name: 'حارس مرمى', icon: '🧤' },
+  DEFENDER: { name: 'مدافع', icon: '🛡️' },
+  MIDFIELDER: { name: 'وسط', icon: '🎯' },
+  FORWARD: { name: 'مهاجم', icon: '⚽' },
+};
+
+// مكون العد التنازلي
+const CountdownTimer = ({ targetDate, onExpire }) => {
+  const [timeLeft, setTimeLeft] = useState('');
+
+  useEffect(() => {
+    const calculateTimeLeft = () => {
+      const now = new Date();
+      const target = new Date(targetDate);
+      const diff = target - now;
+
+      if (diff <= 0) {
+        setTimeLeft('انتهى الوقت');
+        if (onExpire) onExpire();
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      if (hours > 0) {
+        setTimeLeft(`${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      } else {
+        setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+      }
+    };
+
+    calculateTimeLeft();
+    const timer = setInterval(calculateTimeLeft, 1000);
+    return () => clearInterval(timer);
+  }, [targetDate, onExpire]);
+
+  return <span className="font-mono font-bold">{timeLeft}</span>;
 };
 
 const Transfers = () => {
@@ -49,8 +85,8 @@ const Transfers = () => {
           }
         } catch (e) {}
 
-        // جلب جميع اللاعبين
-        const playersRes = await playerAPI.getAll({ leagueId });
+        // جلب جميع اللاعبين (limit=1000 لتجاوز الـ pagination)
+        const playersRes = await playerAPI.getAll({ leagueId, limit: 1000 });
         setAllPlayers(playersRes.data.players || []);
 
         // جلب سجل الانتقالات
@@ -123,10 +159,48 @@ const Transfers = () => {
     );
   }
 
+  // الأدمن يتحكم في فتح/إغلاق الانتقالات
   const transfersOpen = currentRound?.transfersOpen;
 
   return (
     <div className="space-y-6">
+      {/* Round Info Header */}
+      {currentRound && (
+        <div className={`card ${transfersOpen ? 'bg-green-50 border-green-300' : 'bg-red-50 border-red-300'} border-2`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="bg-white rounded-full w-12 h-12 flex items-center justify-center shadow">
+                <span className="text-xl font-bold text-primary-600">{currentRound.roundNumber}</span>
+              </div>
+              <div>
+                <h2 className="font-bold">{currentRound.name}</h2>
+                <p className="text-sm text-gray-600">
+                  {new Date(currentRound.startDate).toLocaleDateString('ar-SA')} - {new Date(currentRound.endDate).toLocaleDateString('ar-SA')}
+                </p>
+              </div>
+            </div>
+            
+            {/* معلومات الحالة والمؤقت */}
+            <div className="flex items-center gap-4">
+              {transfersOpen && currentRound.lockTime && (
+                <div className="bg-white rounded-lg px-4 py-2 shadow-sm border">
+                  <p className="text-xs text-gray-500 text-center">⏰ تغلق بعد</p>
+                  <div className="text-xl text-red-600">
+                    <CountdownTimer 
+                      targetDate={currentRound.lockTime} 
+                      onExpire={() => window.location.reload()}
+                    />
+                  </div>
+                </div>
+              )}
+              <div className={`px-4 py-2 rounded-lg ${transfersOpen ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                <p className="font-bold">{transfersOpen ? '🟢 مفتوحة' : '🔴 مغلقة'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="card">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -134,24 +208,35 @@ const Transfers = () => {
             <h1 className="text-2xl font-bold">🔄 الانتقالات</h1>
             <p className="text-gray-600">{fantasyTeam.name}</p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
+            {/* Budget */}
+            <div className="text-center bg-green-50 px-4 py-2 rounded-xl">
+              <p className="text-2xl font-bold text-green-600">{parseFloat(fantasyTeam.budget || 0).toFixed(1)}$</p>
+              <p className="text-xs text-gray-600">الميزانية المتبقية</p>
+            </div>
+            {/* Max per team */}
+            <div className="text-center bg-blue-50 px-4 py-2 rounded-xl">
+              <p className="text-2xl font-bold text-blue-600">{fantasyTeam.league?.maxPlayersPerRealTeam || 2}</p>
+              <p className="text-xs text-gray-600">أقصى من فريق</p>
+            </div>
             {remainingTransfers && (
               <div className="text-center bg-gray-50 px-4 py-2 rounded-xl">
                 <p className="text-2xl font-bold">{remainingTransfers.remaining}</p>
                 <p className="text-xs text-gray-600">انتقالات متبقية</p>
               </div>
             )}
-            <div className={`text-center px-4 py-2 rounded-xl ${transfersOpen ? 'bg-green-100' : 'bg-red-100'}`}>
-              <p className="text-lg">{transfersOpen ? '🟢' : '🔴'}</p>
-              <p className="text-xs">{transfersOpen ? 'مفتوحة' : 'مغلقة'}</p>
-            </div>
           </div>
         </div>
       </div>
 
       {!transfersOpen && (
-        <div className="card bg-yellow-50 border border-yellow-200">
-          <p className="text-center">⚠️ الانتقالات مغلقة حالياً. انتظر حتى يفتح المشرف نافذة الانتقالات.</p>
+        <div className="card bg-yellow-50 border border-yellow-200 text-center py-8">
+          <span className="text-4xl mb-4 block">🔒</span>
+          <h3 className="font-bold text-lg mb-2">الانتقالات مغلقة حالياً</h3>
+          <p className="text-gray-600">انتظر حتى يفتح المشرف نافذة الانتقالات للجولة القادمة</p>
+          <Link to="/my-team" className="btn-secondary mt-4 inline-block">
+            العودة لفريقي
+          </Link>
         </div>
       )}
 
@@ -182,7 +267,10 @@ const Transfers = () => {
                       <p className="text-xs text-gray-500">{fp.player?.team?.name}</p>
                     </div>
                   </div>
-                  <span className="text-sm text-gray-600">{fp.player?.totalPoints} نقطة</span>
+                  <div className="text-left">
+                    <span className="text-sm font-bold text-green-600">{parseFloat(fp.player?.price || 0).toFixed(1)}$</span>
+                    <p className="text-xs text-gray-500">{fp.player?.totalPoints} نقطة</p>
+                  </div>
                 </button>
               ))}
             </div>
@@ -192,6 +280,22 @@ const Transfers = () => {
           <div className="card bg-gray-50">
             <h2 className="font-bold mb-4 text-center">معاينة الانتقال</h2>
             
+            {/* Budget Impact */}
+            {selectedOutPlayer && selectedInPlayer && (
+              <div className="mb-4 p-3 rounded-xl bg-white">
+                <p className="text-sm text-center">
+                  تأثير الميزانية: 
+                  <span className={`font-bold mr-2 ${
+                    parseFloat(selectedOutPlayer.player?.price || 0) - parseFloat(selectedInPlayer.price || 0) >= 0 
+                      ? 'text-green-600' 
+                      : 'text-red-600'
+                  }`}>
+                    {(parseFloat(selectedOutPlayer.player?.price || 0) - parseFloat(selectedInPlayer.price || 0)).toFixed(1)}$
+                  </span>
+                </p>
+              </div>
+            )}
+            
             <div className="flex flex-col items-center gap-4">
               {/* Out Player */}
               <div className={`w-full p-4 rounded-xl text-center ${selectedOutPlayer ? 'bg-red-100' : 'bg-white'}`}>
@@ -199,6 +303,7 @@ const Transfers = () => {
                   <>
                     <span className="text-3xl">{POSITIONS[selectedOutPlayer.player?.position]?.icon}</span>
                     <p className="font-medium mt-2">{selectedOutPlayer.player?.name}</p>
+                    <p className="text-sm text-green-600">{parseFloat(selectedOutPlayer.player?.price || 0).toFixed(1)}$</p>
                     <p className="text-xs text-gray-500">خروج ↗️</p>
                   </>
                 ) : (
@@ -214,6 +319,7 @@ const Transfers = () => {
                   <>
                     <span className="text-3xl">{POSITIONS[selectedInPlayer.position]?.icon}</span>
                     <p className="font-medium mt-2">{selectedInPlayer.name}</p>
+                    <p className="text-sm text-green-600">{parseFloat(selectedInPlayer.price || 0).toFixed(1)}$</p>
                     <p className="text-xs text-gray-500">دخول ↙️</p>
                   </>
                 ) : (
@@ -252,29 +358,50 @@ const Transfers = () => {
             )}
 
             <div className="space-y-2 max-h-[350px] overflow-y-auto">
-              {availablePlayers.map((player) => (
-                <button
-                  key={player.id}
-                  onClick={() => setSelectedInPlayer(player)}
-                  disabled={!selectedOutPlayer}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition ${
-                    selectedInPlayer?.id === player.id
-                      ? 'bg-green-100 border-2 border-green-500'
-                      : selectedOutPlayer
-                        ? 'bg-gray-50 hover:bg-gray-100'
-                        : 'bg-gray-50 opacity-50 cursor-not-allowed'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{POSITIONS[player.position]?.icon}</span>
-                    <div className="text-right">
-                      <p className="font-medium">{player.name}</p>
-                      <p className="text-xs text-gray-500">{player.team?.name}</p>
+              {availablePlayers.map((player) => {
+                // حساب عدد اللاعبين من نفس الفريق (باستثناء اللاعب الخارج)
+                const teamCount = fantasyTeam?.players?.filter(
+                  fp => fp.player?.teamId === player.teamId && fp.playerId !== selectedOutPlayer?.playerId
+                ).length || 0;
+                const maxPerTeam = fantasyTeam?.league?.maxPlayersPerRealTeam || 2;
+                const teamLimitWarning = teamCount >= maxPerTeam;
+                
+                return (
+                  <button
+                    key={player.id}
+                    onClick={() => !teamLimitWarning && setSelectedInPlayer(player)}
+                    disabled={!selectedOutPlayer || teamLimitWarning}
+                    className={`w-full flex items-center justify-between p-3 rounded-xl transition ${
+                      selectedInPlayer?.id === player.id
+                        ? 'bg-green-100 border-2 border-green-500'
+                        : teamLimitWarning
+                          ? 'bg-red-50 opacity-50 cursor-not-allowed'
+                          : selectedOutPlayer
+                            ? 'bg-gray-50 hover:bg-gray-100'
+                            : 'bg-gray-50 opacity-50 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{POSITIONS[player.position]?.icon}</span>
+                      <div className="text-right">
+                        <p className="font-medium">{player.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {player.team?.name}
+                          {teamCount > 0 && (
+                            <span className={`mr-1 ${teamLimitWarning ? 'text-red-500' : 'text-orange-500'}`}>
+                              ({teamCount}/{maxPerTeam})
+                            </span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <span className="text-sm text-gray-600">{player.totalPoints} نقطة</span>
-                </button>
-              ))}
+                    <div className="text-left">
+                      <span className="text-sm font-bold text-green-600">{parseFloat(player.price || 0).toFixed(1)}$</span>
+                      <p className="text-xs text-gray-500">{player.totalPoints} نقطة</p>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

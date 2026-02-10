@@ -48,7 +48,7 @@ const createRound = async (req, res, next) => {
     });
 
     res.status(201).json(
-      formatResponse('success', 'تم إنشاء الجولة بنجاح', round)
+      formatResponse('success', 'تم إنشاء الجولة بنجاح', { round })
     );
   } catch (error) {
     next(error);
@@ -130,8 +130,10 @@ const getRound = async (req, res, next) => {
     const isLocked = round.lockTime && new Date() >= new Date(round.lockTime);
 
     res.json(formatResponse('success', 'تم جلب بيانات الجولة', {
-      ...round,
-      isLocked
+      round: {
+        ...round,
+        isLocked
+      }
     }));
   } catch (error) {
     next(error);
@@ -177,7 +179,7 @@ const updateRound = async (req, res, next) => {
       data: updateData
     });
 
-    res.json(formatResponse('success', 'تم تحديث الجولة بنجاح', updatedRound));
+    res.json(formatResponse('success', 'تم تحديث الجولة بنجاح', { round: updatedRound }));
   } catch (error) {
     next(error);
   }
@@ -218,7 +220,7 @@ const toggleTransfers = async (req, res, next) => {
       ? 'تم فتح الانتقالات للجولة' 
       : 'تم إغلاق الانتقالات للجولة';
 
-    res.json(formatResponse('success', message, updatedRound));
+    res.json(formatResponse('success', message, { round: updatedRound }));
   } catch (error) {
     next(error);
   }
@@ -390,12 +392,12 @@ const getCurrentRound = async (req, res, next) => {
 
     const now = new Date();
 
-    // Find round that is currently active (between start and end date)
+    // الأولوية 1: جولة فيها الانتقالات مفتوحة (للسماح بالتعديل قبل بدء الجولة)
     let round = await prisma.round.findFirst({
       where: {
         leagueId: parseInt(leagueId),
-        startDate: { lte: now },
-        endDate: { gte: now }
+        transfersOpen: true,
+        isCompleted: false
       },
       include: {
         matches: {
@@ -405,15 +407,38 @@ const getCurrentRound = async (req, res, next) => {
           },
           orderBy: { matchDate: 'asc' }
         }
-      }
+      },
+      orderBy: { roundNumber: 'asc' }
     });
 
-    // If no active round, get the next upcoming one
+    // الأولوية 2: جولة نشطة حالياً (بين تاريخ البداية والنهاية)
     if (!round) {
       round = await prisma.round.findFirst({
         where: {
           leagueId: parseInt(leagueId),
-          startDate: { gt: now }
+          startDate: { lte: now },
+          endDate: { gte: now },
+          isCompleted: false
+        },
+        include: {
+          matches: {
+            include: {
+              homeTeam: { select: { id: true, name: true, shortName: true } },
+              awayTeam: { select: { id: true, name: true, shortName: true } }
+            },
+            orderBy: { matchDate: 'asc' }
+          }
+        }
+      });
+    }
+
+    // الأولوية 3: الجولة القادمة
+    if (!round) {
+      round = await prisma.round.findFirst({
+        where: {
+          leagueId: parseInt(leagueId),
+          startDate: { gt: now },
+          isCompleted: false
         },
         include: {
           matches: {
@@ -428,18 +453,40 @@ const getCurrentRound = async (req, res, next) => {
       });
     }
 
+    // الأولوية 4: آخر جولة مكتملة (لعرض النتائج)
+    if (!round) {
+      round = await prisma.round.findFirst({
+        where: {
+          leagueId: parseInt(leagueId),
+          isCompleted: true
+        },
+        include: {
+          matches: {
+            include: {
+              homeTeam: { select: { id: true, name: true, shortName: true } },
+              awayTeam: { select: { id: true, name: true, shortName: true } }
+            },
+            orderBy: { matchDate: 'asc' }
+          }
+        },
+        orderBy: { roundNumber: 'desc' }
+      });
+    }
+
     if (!round) {
       return res.status(404).json(
         formatResponse('error', 'لا توجد جولات متاحة')
       );
     }
 
-    // Check if transfers are locked
-    const isLocked = round.lockTime && now >= new Date(round.lockTime);
+    // التحكم يدوياً من الأدمن فقط
+    const isLocked = !round.transfersOpen;
 
     res.json(formatResponse('success', 'تم جلب الجولة الحالية', {
-      ...round,
-      isLocked
+      round: {
+        ...round,
+        isLocked
+      }
     }));
   } catch (error) {
     next(error);

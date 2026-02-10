@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const MATCH_STATUS = {
   SCHEDULED: { label: 'مجدولة', color: 'bg-blue-100 text-blue-700' },
   LIVE: { label: 'جارية', color: 'bg-green-100 text-green-700' },
-  FINISHED: { label: 'انتهت', color: 'bg-gray-100 text-gray-700' },
+  COMPLETED: { label: 'انتهت', color: 'bg-gray-100 text-gray-700' },
   POSTPONED: { label: 'مؤجلة', color: 'bg-yellow-100 text-yellow-700' },
   CANCELLED: { label: 'ملغاة', color: 'bg-red-100 text-red-700' },
 };
@@ -32,7 +32,7 @@ const ManageMatches = () => {
   const [resultData, setResultData] = useState({
     homeScore: 0,
     awayScore: 0,
-    status: 'FINISHED',
+    status: 'COMPLETED',
   });
 
   useEffect(() => {
@@ -155,7 +155,7 @@ const ManageMatches = () => {
     setResultData({
       homeScore: match.homeScore || 0,
       awayScore: match.awayScore || 0,
-      status: match.status || 'FINISHED',
+      status: match.status || 'COMPLETED',
     });
     setShowResultModal(true);
   };
@@ -255,7 +255,7 @@ const ManageMatches = () => {
                       </div>
                       
                       <div className="text-center px-4">
-                        {match.status === 'FINISHED' ? (
+                        {match.status === 'COMPLETED' ? (
                           <p className="text-2xl font-bold">
                             {match.homeScore} - {match.awayScore}
                           </p>

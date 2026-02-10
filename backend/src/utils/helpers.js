@@ -16,13 +16,15 @@ function generateLeagueCode() {
  * Format API response
  * @param {string} status - 'success' or 'error'
  * @param {string} message - Response message
- * @param {any} data - Response data
+ * @param {any} data - Response data (spread at top level for easy access)
  * @returns {Object} Formatted response
  */
 function formatResponse(status, message, data = null) {
   const response = { status, message };
   if (data !== null) {
-    response.data = data;
+    // Spread data at top level for easier frontend access
+    // response.data.leagues instead of response.data.data.leagues
+    Object.assign(response, data);
   }
   return response;
 }

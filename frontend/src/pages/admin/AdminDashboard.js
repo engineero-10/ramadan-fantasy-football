@@ -21,17 +21,30 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const [leaguesRes, teamsRes, playersRes, matchesRes] = await Promise.all([
+      const [leaguesRes, teamsRes, matchesRes] = await Promise.all([
         leagueAPI.getAll(),
         teamAPI.getAll(),
-        playerAPI.getAll({}),
         matchAPI.getAll({}),
       ]);
 
+      // حساب عدد اللاعبين من كل الدوريات
+      let totalPlayers = 0;
+      const leagues = leaguesRes.data.leagues || [];
+      if (leagues.length > 0) {
+        const playerCounts = await Promise.all(
+          leagues.map(league => 
+            playerAPI.getAll({ leagueId: league.id, limit: 1 })
+              .then(res => res.data.pagination?.total || 0)
+              .catch(() => 0)
+          )
+        );
+        totalPlayers = playerCounts.reduce((sum, count) => sum + count, 0);
+      }
+
       setStats({
-        leagues: leaguesRes.data.leagues?.length || 0,
+        leagues: leagues.length,
         teams: teamsRes.data.teams?.length || 0,
-        players: playersRes.data.players?.length || 0,
+        players: totalPlayers,
         matches: matchesRes.data.matches?.length || 0,
       });
 
@@ -189,7 +202,7 @@ const AdminDashboard = () => {
                 <div className="flex items-center gap-4">
                   <span className="font-medium">{match.homeTeam?.name}</span>
                   <span className="bg-gray-200 px-3 py-1 rounded">
-                    {match.status === 'FINISHED' 
+                    {match.status === 'COMPLETED' 
                       ? `${match.homeScore} - ${match.awayScore}`
                       : 'vs'
                     }

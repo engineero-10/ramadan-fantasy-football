@@ -144,68 +144,82 @@ const createFantasyTeam = async (req, res, next) => {
 
 /**
  * Get user's fantasy team in a league
- * GET /api/fantasy-teams/:leagueId
+ * GET /api/fantasy-teams/:leagueId or GET /api/fantasy-teams/my
  */
 const getMyFantasyTeam = async (req, res, next) => {
   try {
     const { leagueId } = req.params;
 
-    const fantasyTeam = await prisma.fantasyTeam.findUnique({
-      where: {
-        userId_leagueId: {
-          userId: req.user.id,
-          leagueId: parseInt(leagueId)
-        }
-      },
-      include: {
-        players: {
-          include: {
-            player: {
-              include: {
-                team: { select: { id: true, name: true, shortName: true } },
-                matchStats: {
-                  orderBy: { match: { matchDate: 'desc' } },
-                  take: 5,
-                  include: {
-                    match: {
-                      include: {
-                        round: { select: { id: true, name: true, roundNumber: true } }
-                      }
+    const includeOptions = {
+      players: {
+        include: {
+          player: {
+            include: {
+              team: { select: { id: true, name: true, shortName: true } },
+              matchStats: {
+                orderBy: { match: { matchDate: 'desc' } },
+                take: 5,
+                include: {
+                  match: {
+                    include: {
+                      round: { select: { id: true, name: true, roundNumber: true } }
                     }
                   }
                 }
               }
             }
-          },
-          orderBy: [
-            { isStarter: 'desc' },
-            { position: 'asc' }
-          ]
-        },
-        pointsHistory: {
-          include: {
-            round: { select: { id: true, name: true, roundNumber: true } }
-          },
-          orderBy: { round: { roundNumber: 'asc' } }
-        },
-        league: {
-          select: {
-            id: true,
-            name: true,
-            budget: true,
-            playersPerTeam: true,
-            startingPlayers: true,
-            substitutes: true,
-            maxPlayersPerRealTeam: true,
-            maxTransfersPerRound: true
           }
+        },
+        orderBy: [
+          { isStarter: 'desc' },
+          { position: 'asc' }
+        ]
+      },
+      pointsHistory: {
+        include: {
+          round: { select: { id: true, name: true, roundNumber: true } }
+        },
+        orderBy: { round: { roundNumber: 'asc' } }
+      },
+      league: {
+        select: {
+          id: true,
+          name: true,
+          budget: true,
+          playersPerTeam: true,
+          startingPlayers: true,
+          substitutes: true,
+          maxPlayersPerRealTeam: true,
+          maxTransfersPerRound: true
         }
       }
-    });
+    };
+
+    let fantasyTeam;
+    
+    // If leagueId is provided and valid, find specific team
+    if (leagueId && leagueId !== 'undefined' && leagueId !== 'my') {
+      fantasyTeam = await prisma.fantasyTeam.findUnique({
+        where: {
+          userId_leagueId: {
+            userId: req.user.id,
+            leagueId: parseInt(leagueId)
+          }
+        },
+        include: includeOptions
+      });
+    } else {
+      // No leagueId provided - find user's first fantasy team
+      fantasyTeam = await prisma.fantasyTeam.findFirst({
+        where: { userId: req.user.id },
+        orderBy: { createdAt: 'desc' },
+        include: includeOptions
+      });
+    }
 
     if (!fantasyTeam) {
       return res.status(404).json(
-        formatResponse('error', 'لم تقم بإنشاء فريق خيالي في هذا الدوري')
+        formatResponse('error', 'لم تقم بإنشاء فريق خيالي بعد')
       );
     }
 
@@ -219,8 +233,10 @@ const getMyFantasyTeam = async (req, res, next) => {
     });
 
     res.json(formatResponse('success', 'تم جلب بيانات الفريق', {
-      ...fantasyTeam,
-      players: playersWithStats
+      fantasyTeam: {
+        ...fantasyTeam,
+        players: playersWithStats
+      }
     }));
   } catch (error) {
     next(error);
@@ -303,7 +319,7 @@ const updateFantasyTeam = async (req, res, next) => {
       data: { name }
     });
 
-    res.json(formatResponse('success', 'تم تحديث اسم الفريق', updatedTeam));
+    res.json(formatResponse('success', 'تم تحديث اسم الفريق', { fantasyTeam: updatedTeam }));
   } catch (error) {
     next(error);
   }
@@ -342,19 +358,20 @@ const updateLineup = async (req, res, next) => {
       );
     }
 
-    // Check if there's an active round that's locked
-    const now = new Date();
-    const lockedRound = await prisma.round.findFirst({
+    // التحقق من إمكانية التعديل (يتحكم فيها الأدمن عبر transfersOpen)
+    // البحث عن جولة مفتوحة للتعديل
+    const openRound = await prisma.round.findFirst({
       where: {
         leagueId: fantasyTeam.leagueId,
-        lockTime: { lte: now },
-        endDate: { gte: now }
+        transfersOpen: true,
+        isCompleted: false
       }
     });
 
-    if (lockedRound) {
+    // إذا لم توجد جولة مفتوحة، لا يمكن التعديل
+    if (!openRound) {
       return res.status(400).json(
-        formatResponse('error', 'لا يمكن تعديل التشكيلة أثناء الجولة')
+        formatResponse('error', 'لا يمكن تعديل التشكيلة حالياً - انتظر حتى يفتح المشرف الانتقالات')
       );
     }
 
@@ -397,7 +414,7 @@ const updateLineup = async (req, res, next) => {
       }
     });
 
-    res.json(formatResponse('success', 'تم تحديث التشكيلة', updatedTeam));
+    res.json(formatResponse('success', 'تم تحديث التشكيلة', { fantasyTeam: updatedTeam }));
   } catch (error) {
     next(error);
   }
