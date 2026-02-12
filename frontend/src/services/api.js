@@ -2,12 +2,16 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+// Log the API URL for debugging (remove in production)
+console.log('🔗 API URL:', API_URL);
+
 // Create axios instance
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  withCredentials: false // Set to false since we use Authorization header
 });
 
 // Add token to requests

@@ -32,19 +32,24 @@ app.use(helmet());
 
 // CORS configuration
 const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? (process.env.FRONTEND_URL || '').split(',').map(url => url.trim())
+  ? (process.env.FRONTEND_URL || '*').split(',').map(url => url.trim())
   : ['http://localhost:3000', 'http://127.0.0.1:3000'];
 
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    // In production, allow all origins if FRONTEND_URL is not set or is '*'
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    console.log('❌ CORS blocked origin:', origin);
+    console.log('✅ Allowed origins:', allowedOrigins);
     return callback(new Error('Not allowed by CORS'));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Request logging
