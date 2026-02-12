@@ -1,5 +1,5 @@
 # Backend Dockerfile - Ramadan Fantasy Football
-# Last updated: 2026-02-12
+# Last updated: 2026-02-12 v2
 FROM node:18-alpine
 
 # Install OpenSSL (required by Prisma)
@@ -18,13 +18,11 @@ COPY prisma ./prisma/
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Copy source code and startup script
+# Copy source code
 COPY src ./src/
-COPY start.sh ./start.sh
-RUN chmod +x ./start.sh
 
-# Railway provides PORT dynamically
-ENV PORT=5000
+# Railway provides PORT dynamically - don't override it
+# ENV PORT=5000
 
-# Start with the script
-CMD ["./start.sh"]
+# Start with direct node command (simpler, more reliable)
+CMD ["sh", "-c", "echo 'Starting server...' && npx prisma migrate deploy || true && node src/server.js"]

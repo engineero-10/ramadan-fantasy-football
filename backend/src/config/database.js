@@ -11,14 +11,15 @@ const prisma = new PrismaClient({
     : ['error'],
 });
 
-// Handle connection errors
+// Handle connection - don't exit on failure, let the app continue
 prisma.$connect()
   .then(() => {
     console.log('✅ Database connected successfully');
   })
   .catch((error) => {
-    console.error('❌ Database connection failed:', error);
-    process.exit(1);
+    console.error('❌ Database connection failed:', error.message);
+    console.error('⚠️ Server will continue but database operations will fail');
+    // Don't exit - let the health check endpoint work
   });
 
 // Graceful shutdown
