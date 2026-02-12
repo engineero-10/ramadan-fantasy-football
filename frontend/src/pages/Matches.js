@@ -27,10 +27,12 @@ const Matches = () => {
     if (selectedLeague) {
       fetchRounds();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague]);
 
   useEffect(() => {
     fetchMatches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague, selectedRound]);
 
   const fetchLeagues = async () => {

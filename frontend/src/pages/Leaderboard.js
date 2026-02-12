@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { leaderboardAPI, leagueAPI, roundAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -17,6 +17,7 @@ const Leaderboard = () => {
 
   useEffect(() => {
     fetchLeagues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -25,6 +26,7 @@ const Leaderboard = () => {
       fetchLeaderboard();
       fetchStats();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague, selectedRound]);
 
   const fetchLeagues = async () => {

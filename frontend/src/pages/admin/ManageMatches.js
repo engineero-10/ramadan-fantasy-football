@@ -42,6 +42,7 @@ const ManageMatches = ({ fixedLeagueId }) => {
       fetchLeagueData();
       setSelectedLeague(fixedLeagueId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fixedLeagueId]);
 
   useEffect(() => {
@@ -49,10 +50,12 @@ const ManageMatches = ({ fixedLeagueId }) => {
       fetchTeams();
       fetchRounds();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague]);
 
   useEffect(() => {
     fetchMatches();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague, selectedRound]);
 
   const fetchLeagueData = async () => {

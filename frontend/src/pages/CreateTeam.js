@@ -47,6 +47,7 @@ const CreateTeam = () => {
   // جلب الدوريات المشترك بها
   useEffect(() => {
     fetchLeagues();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // جلب اللاعبين عند اختيار الدوري
@@ -54,6 +55,7 @@ const CreateTeam = () => {
     if (selectedLeague) {
       fetchPlayers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague]);
 
   const fetchLeagues = async () => {
@@ -394,8 +396,6 @@ const CreateTeam = () => {
               {filteredPlayers.map((player) => {
                 const isSelected = selectedPlayers.find(sp => sp.player.id === player.id);
                 const teamCount = getTeamPlayerCount(player.teamId);
-                const canAfford = budgetUsed + parseFloat(player.price || 0) <= leagueRules.budget;
-                const teamLimitOk = teamCount < leagueRules.maxPerTeam;
                 const canAddStarter = canAddPlayer(player, true);
                 const canAddSub = canAddPlayer(player, false);
                 

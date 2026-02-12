@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { fantasyTeamAPI, roundAPI, leagueAPI } from '../services/api';
+import { fantasyTeamAPI, roundAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const POSITIONS = {
@@ -37,6 +37,7 @@ const MyTeam = () => {
   // جلب كل الفرق أولاً
   useEffect(() => {
     fetchAllTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // عند تغيير الدوري المحدد، جلب بيانات الفريق

@@ -35,18 +35,21 @@ const ManagePlayers = ({ fixedLeagueId }) => {
       fetchLeagueData();
       setSelectedLeague(fixedLeagueId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fixedLeagueId]);
 
   useEffect(() => {
     if (selectedLeague) {
       fetchTeams();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague]);
 
   useEffect(() => {
     if (selectedLeague) {
       fetchPlayers();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague, selectedTeam, positionFilter]);
 
   const fetchLeagueData = async () => {

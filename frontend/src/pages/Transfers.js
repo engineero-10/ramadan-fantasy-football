@@ -68,6 +68,7 @@ const Transfers = () => {
   // جلب كل الفرق أولاً
   useEffect(() => {
     fetchAllTeams();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // عند تغيير الدوري المحدد، جلب بيانات الفريق

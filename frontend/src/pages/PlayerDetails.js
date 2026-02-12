@@ -17,6 +17,7 @@ const PlayerDetails = () => {
 
   useEffect(() => {
     fetchPlayer();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchPlayer = async () => {
