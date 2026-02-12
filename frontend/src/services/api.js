@@ -96,6 +96,7 @@ export const matchAPI = {
 // ==================== ROUNDS ====================
 export const roundAPI = {
   getAll: (leagueId) => api.get('/rounds', { params: { leagueId } }),
+  getByLeague: (leagueId) => api.get('/rounds', { params: { leagueId } }),
   getById: (id) => api.get(`/rounds/${id}`),
   getCurrent: (leagueId) => api.get(`/rounds/current/${leagueId}`),
   getStats: (id) => api.get(`/rounds/${id}/stats`),
