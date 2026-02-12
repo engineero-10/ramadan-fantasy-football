@@ -21,22 +21,6 @@ const ManageRounds = ({ fixedLeagueId }) => {
     lockTime: '',
   });
 
-  useEffect(() => {
-    if (!fixedLeagueId) {
-      fetchLeagues();
-    } else {
-      // جلب بيانات الدوري المحدد لعرضه في الـ form
-      fetchLeagueData();
-      setSelectedLeague(fixedLeagueId);
-    }
-  }, [fixedLeagueId]);
-
-  useEffect(() => {
-    if (selectedLeague) {
-      fetchRounds();
-    }
-  }, [selectedLeague]);
-
   const fetchLeagueData = async () => {
     try {
       const response = await leagueAPI.getById(fixedLeagueId);
@@ -47,6 +31,36 @@ const ManageRounds = ({ fixedLeagueId }) => {
     }
   };
 
+  const fetchRounds = async () => {
+    setLoading(true);
+    try {
+      const response = await roundAPI.getByLeague(selectedLeague);
+      setRounds(response.data.rounds || []);
+    } catch (error) {
+      toast.error('خطأ في جلب الجولات');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!fixedLeagueId) {
+      fetchLeagues();
+    } else {
+      // جلب بيانات الدوري المحدد لعرضه في الـ form
+      fetchLeagueData();
+      setSelectedLeague(fixedLeagueId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fixedLeagueId]);
+
+  useEffect(() => {
+    if (selectedLeague) {
+      fetchRounds();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeague]);
+
   const fetchLeagues = async () => {
     try {
       const response = await leagueAPI.getAll();
@@ -56,18 +70,6 @@ const ManageRounds = ({ fixedLeagueId }) => {
       }
     } catch (error) {
       toast.error('خطأ في جلب الدوريات');
-    }
-  };
-
-  const fetchRounds = async () => {
-    setLoading(true);
-    try {
-      const response = await roundAPI.getAll(selectedLeague);
-      setRounds(response.data.rounds || []);
-    } catch (error) {
-      toast.error('خطأ في جلب الجولات');
-    } finally {
-      setLoading(false);
     }
   };
 

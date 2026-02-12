@@ -15,7 +15,6 @@ const MatchStats = () => {
   const [match, setMatch] = useState(null);
   const [homePlayers, setHomePlayers] = useState([]);
   const [awayPlayers, setAwayPlayers] = useState([]);
-  const [existingStats, setExistingStats] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingStats, setSavingStats] = useState(false);
   const [activeTab, setActiveTab] = useState('home');
@@ -25,6 +24,7 @@ const MatchStats = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchData = async () => {
@@ -33,7 +33,6 @@ const MatchStats = () => {
       const matchRes = await matchAPI.getById(id);
       const matchData = matchRes.data.match;
       setMatch(matchData);
-      setExistingStats(matchData.matchStats || []);
 
       // تحويل الإحصائيات الموجودة لـ form state
       const statsMap = {};
@@ -130,7 +129,6 @@ const MatchStats = () => {
   }
 
   const currentPlayers = activeTab === 'home' ? homePlayers : awayPlayers;
-  const currentTeam = activeTab === 'home' ? match.homeTeam : match.awayTeam;
 
   return (
     <div className="space-y-4 sm:space-y-6">

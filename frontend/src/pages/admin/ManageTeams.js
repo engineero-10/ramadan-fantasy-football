@@ -21,12 +21,14 @@ const ManageTeams = ({ fixedLeagueId }) => {
       fetchLeagueData();
       setSelectedLeague(fixedLeagueId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fixedLeagueId]);
 
   useEffect(() => {
     if (selectedLeague) {
       fetchTeams();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeague]);
 
   const fetchLeagueData = async () => {
