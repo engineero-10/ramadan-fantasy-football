@@ -1,4 +1,5 @@
-# Backend Dockerfile
+# Backend Dockerfile - Ramadan Fantasy Football
+# Last updated: 2026-02-12
 FROM node:18-alpine
 
 # Install OpenSSL (required by Prisma)
