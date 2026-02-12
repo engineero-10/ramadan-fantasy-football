@@ -30,27 +30,16 @@ const app = express();
 // Security headers
 app.use(helmet());
 
-// CORS configuration
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? (process.env.FRONTEND_URL || '*').split(',').map(url => url.trim())
-  : ['http://localhost:3000', 'http://127.0.0.1:3000'];
-
+// CORS configuration - Allow all origins for now
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
-    // In production, allow all origins if FRONTEND_URL is not set or is '*'
-    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    console.log('❌ CORS blocked origin:', origin);
-    console.log('✅ Allowed origins:', allowedOrigins);
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Request logging
 if (process.env.NODE_ENV !== 'test') {
