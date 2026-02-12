@@ -92,15 +92,16 @@ app.use(errorHandler);
 // ==================== SERVER START ====================
 
 const PORT = process.env.PORT || 5000;
+const HOST = '0.0.0.0';
 
 // Only start server if not in test mode
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, HOST, () => {
     console.log(`
   ╔════════════════════════════════════════════════════════════╗
   ║                                                            ║
   ║   🏆 Ramadan Fantasy Football API                          ║
-  ║   🚀 Server running on port ${PORT}                           ║
+  ║   🚀 Server running on ${HOST}:${PORT}                         ║
   ║   📅 ${new Date().toISOString()}                   ║
   ║                                                            ║
   ╚════════════════════════════════════════════════════════════╝
