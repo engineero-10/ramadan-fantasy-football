@@ -17,11 +17,13 @@ COPY prisma ./prisma/
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Copy source code
+# Copy source code and startup script
 COPY src ./src/
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
 
-# Railway uses dynamic PORT - don't hardcode
+# Railway provides PORT dynamically
 ENV PORT=5000
 
-# Start the application (run migrations first)
-CMD ["sh", "-c", "npx prisma migrate deploy && node src/server.js"]
+# Start with the script
+CMD ["./start.sh"]

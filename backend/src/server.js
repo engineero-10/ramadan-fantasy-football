@@ -94,6 +94,11 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 const HOST = '0.0.0.0';
 
+// Log environment info for debugging
+console.log('🔧 Environment:', process.env.NODE_ENV);
+console.log('🔧 PORT:', PORT);
+console.log('🔧 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+
 // Only start server if not in test mode
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, HOST, () => {
@@ -106,6 +111,9 @@ if (process.env.NODE_ENV !== 'test') {
   ║                                                            ║
   ╚════════════════════════════════════════════════════════════╝
     `);
+  }).on('error', (err) => {
+    console.error('❌ Server failed to start:', err);
+    process.exit(1);
   });
 }
 
