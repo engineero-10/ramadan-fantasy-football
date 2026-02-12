@@ -1,6 +1,11 @@
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Use environment variable or fallback to Railway API
+const API_URL = process.env.REACT_APP_API_URL && process.env.REACT_APP_API_URL.startsWith('http')
+  ? process.env.REACT_APP_API_URL
+  : process.env.NODE_ENV === 'production'
+    ? 'https://ramadan-fantasy-football-production.up.railway.app/api'
+    : 'http://localhost:5000/api';
 
 // Log the API URL for debugging (remove in production)
 console.log('🔗 API URL:', API_URL);
