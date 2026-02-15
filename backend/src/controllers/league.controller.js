@@ -7,16 +7,18 @@ const prisma = require('../config/database');
 const { formatResponse, generateLeagueCode, paginate, paginationMeta } = require('../utils/helpers');
 
 /**
- * Create new league (Admin only - ONE league per system)
+ * Create new league (Admin only - ONE league per admin)
  * POST /api/leagues
  */
 const createLeague = async (req, res, next) => {
   try {
-    // التحقق من عدم وجود دوري سابق - مسموح بدوري واحد فقط
-    const existingLeague = await prisma.league.findFirst();
+    // التحقق من عدم وجود دوري سابق لهذا الأدمن - مسموح بدوري واحد فقط لكل أدمن
+    const existingLeague = await prisma.league.findFirst({
+      where: { createdById: req.user.id }
+    });
     if (existingLeague) {
       return res.status(400).json(
-        formatResponse('error', 'لا يمكن إنشاء أكثر من دوري واحد في النظام')
+        formatResponse('error', 'لديك دوري بالفعل - مسموح بدوري واحد فقط لكل مشرف')
       );
     }
 
@@ -94,10 +96,22 @@ const getLeagues = async (req, res, next) => {
 
     let where = {};
     
-    // للمستخدم العادي: يظهر فقط الدوريات المشترك فيها (إلا إذا طلب all=true للانضمام لدوري جديد)
-    // للأدمن: يظهر الكل دائماً
+    // للمالك: يظهر كل الدوريات
+    // للأدمن: يظهر فقط الدوريات التي أنشأها
+    // للمستخدم العادي: يظهر فقط الدوريات المشترك فيها
+    const isOwner = req.user?.role === 'OWNER';
     const isAdmin = req.user?.role === 'ADMIN';
-    const showOnlyMyLeagues = !isAdmin && all !== 'true';
+    
+    // المالك يرى كل الدوريات
+    if (isOwner) {
+      // لا يوجد where - يرى الكل
+    }
+    // الأدمن يرى فقط دورياته
+    else if (isAdmin) {
+      where = { createdById: req.user.id };
+    }
+    
+    const showOnlyMyLeagues = !isOwner && !isAdmin && all !== 'true';
     
     if (showOnlyMyLeagues || myLeagues === 'true') {
       where = {
@@ -235,9 +249,9 @@ const updateLeague = async (req, res, next) => {
       );
     }
 
-    if (existing.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (existing.createdById !== req.user.id) {
       return res.status(403).json(
-        formatResponse('error', 'غير مسموح بتعديل هذا الدوري')
+        formatResponse('error', 'غير مسموح بتعديل هذا الدوري - يمكنك تعديل دوريك فقط')
       );
     }
 
@@ -282,9 +296,9 @@ const deleteLeague = async (req, res, next) => {
       );
     }
 
-    if (existing.createdById !== req.user.id && req.user.role !== 'ADMIN') {
+    if (existing.createdById !== req.user.id) {
       return res.status(403).json(
-        formatResponse('error', 'غير مسموح بحذف هذا الدوري')
+        formatResponse('error', 'غير مسموح بحذف هذا الدوري - يمكنك حذف دوريك فقط')
       );
     }
 
@@ -567,6 +581,56 @@ const getLeagueByCode = async (req, res, next) => {
   }
 };
 
+/**
+ * Get all fantasy teams in a league with detailed player info (Admin only)
+ * GET /api/leagues/:id/fantasy-teams
+ */
+const getLeagueFantasyTeams = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Check league exists and user has access
+    const league = await prisma.league.findUnique({
+      where: { id: parseInt(id) }
+    });
+
+    if (!league) {
+      return res.status(404).json(
+        formatResponse('error', 'الدوري غير موجود')
+      );
+    }
+
+    // Only owner or league creator can view all teams
+    if (req.user.role !== 'OWNER' && league.createdById !== req.user.id) {
+      return res.status(403).json(
+        formatResponse('error', 'غير مسموح بعرض فرق هذا الدوري')
+      );
+    }
+
+    const fantasyTeams = await prisma.fantasyTeam.findMany({
+      where: { leagueId: parseInt(id) },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        players: {
+          include: {
+            player: {
+              include: {
+                team: { select: { id: true, name: true, shortName: true } }
+              }
+            }
+          }
+        },
+        _count: { select: { players: true } }
+      },
+      orderBy: { totalPoints: 'desc' }
+    });
+
+    res.json(formatResponse('success', 'تم جلب فرق الدوري', { fantasyTeams }));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createLeague,
   getLeagues,
@@ -577,5 +641,6 @@ module.exports = {
   getLeagueMembers,
   updateMemberRole,
   getMyAdminLeagues,
-  getLeagueByCode
+  getLeagueByCode,
+  getLeagueFantasyTeams
 };

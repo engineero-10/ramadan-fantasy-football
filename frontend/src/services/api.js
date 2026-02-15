@@ -60,7 +60,8 @@ export const leagueAPI = {
   delete: (id) => api.delete(`/leagues/${id}`),
   join: (code) => api.post('/leagues/join', { code }),
   getMembers: (id) => api.get(`/leagues/${id}/members`),
-  updateMemberRole: (leagueId, userId, role) => api.put(`/leagues/${leagueId}/members/${userId}/role`, { role })
+  updateMemberRole: (leagueId, userId, role) => api.put(`/leagues/${leagueId}/members/${userId}/role`, { role }),
+  getFantasyTeams: (id) => api.get(`/leagues/${id}/fantasy-teams`)
 };
 
 // ==================== TEAMS ====================
@@ -116,7 +117,9 @@ export const fantasyTeamAPI = {
   create: (data) => api.post('/fantasy-teams', data),
   update: (id, data) => api.put(`/fantasy-teams/${id}`, data),
   updateLineup: (id, players) => api.put(`/fantasy-teams/${id}/lineup`, { players }),
-  getRoundPoints: (id, roundId) => api.get(`/fantasy-teams/${id}/points/${roundId}`)
+  setCaptain: (id, playerId, captainType) => api.put(`/fantasy-teams/${id}/captain`, { playerId, captainType }),
+  getRoundPoints: (id, roundId) => api.get(`/fantasy-teams/${id}/points/${roundId}`),
+  getHistory: (id) => api.get(`/fantasy-teams/${id}/history`)
 };
 
 // ==================== TRANSFERS ====================
@@ -134,6 +137,16 @@ export const leaderboardAPI = {
   getMyRank: (leagueId) => api.get(`/leaderboard/${leagueId}/my-rank`),
   getStats: (leagueId) => api.get(`/leaderboard/${leagueId}/stats`),
   getH2H: (teamId1, teamId2) => api.get(`/leaderboard/h2h/${teamId1}/${teamId2}`)
+};
+
+// ==================== ADMIN MANAGEMENT (Owner only) ====================
+export const adminManagementAPI = {
+  getAll: (params) => api.get('/admin-management', { params }),
+  getById: (id) => api.get(`/admin-management/${id}`),
+  create: (data) => api.post('/admin-management', data),
+  update: (id, data) => api.put(`/admin-management/${id}`, data),
+  delete: (id) => api.delete(`/admin-management/${id}`),
+  getStats: () => api.get('/admin-management/stats')
 };
 
 export default api;

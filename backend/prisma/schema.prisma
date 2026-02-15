@@ -32,6 +32,7 @@ model User {
 }
 
 enum Role {
+  OWNER
   ADMIN
   USER
 }
@@ -228,14 +229,15 @@ model MatchStat {
 // ==================== FANTASY TEAMS ====================
 
 model FantasyTeam {
-  id              Int       @id @default(autoincrement())
-  name            String
-  userId          Int
-  leagueId        Int
-  totalPoints     Int       @default(0)
-  budget          Decimal   @db.Decimal(10, 2)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                  Int       @id @default(autoincrement())
+  name                String
+  userId              Int
+  leagueId            Int
+  totalPoints         Int       @default(0)
+  budget              Decimal   @db.Decimal(10, 2)
+  tripleCaptainUsed   Boolean   @default(false)  // هل استخدم التريبل كابتن
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   // Relations
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -250,12 +252,13 @@ model FantasyTeam {
 }
 
 model FantasyPlayer {
-  id              Int       @id @default(autoincrement())
+  id              Int           @id @default(autoincrement())
   fantasyTeamId   Int
   playerId        Int
-  isStarter       Boolean   @default(true)
-  position        Int       @default(0) // Position in formation
-  addedAt         DateTime  @default(now())
+  isStarter       Boolean       @default(true)
+  position        Int           @default(0) // Position in formation
+  captainType     CaptainType   @default(NONE)  // نوع الكابتن
+  addedAt         DateTime      @default(now())
 
   // Relations
   fantasyTeam     FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
@@ -264,6 +267,12 @@ model FantasyPlayer {
   @@unique([fantasyTeamId, playerId])
   @@index([playerId])
   @@map("fantasy_players")
+}
+
+enum CaptainType {
+  NONE
+  CAPTAIN         // نقاط مضاعفة (x2)
+  TRIPLE_CAPTAIN  // نقاط ثلاثية (x3)
 }
 
 // ==================== TRANSFERS ====================

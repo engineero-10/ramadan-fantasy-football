@@ -19,6 +19,8 @@ router.get('/:leagueId', fantasyTeamController.getMyFantasyTeam);
 router.get('/team/:id', idParamValidator, validate, fantasyTeamController.getFantasyTeam);
 router.put('/:id', idParamValidator, validate, fantasyTeamController.updateFantasyTeam);
 router.put('/:id/lineup', idParamValidator, validate, fantasyTeamController.updateLineup);
+router.put('/:id/captain', idParamValidator, validate, fantasyTeamController.setCaptain);
 router.get('/:id/points/:roundId', fantasyTeamController.getRoundPoints);
+router.get('/:id/history', fantasyTeamController.getRoundHistory);
 
 module.exports = router;

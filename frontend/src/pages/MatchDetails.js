@@ -22,20 +22,22 @@ const STAT_ICONS = {
 };
 
 const MatchDetails = () => {
-  const { id } = useParams();
+  const { matchId } = useParams();
   const [match, setMatch] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchMatch();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [matchId]);
 
   const fetchMatch = async () => {
     try {
-      const response = await matchAPI.getById(id);
+      const response = await matchAPI.getById(matchId);
+      console.log('Match response:', response.data);
       setMatch(response.data.match);
     } catch (error) {
+      console.error('Match fetch error:', error.response?.data || error.message);
       toast.error('خطأ في جلب تفاصيل المباراة');
     } finally {
       setLoading(false);
@@ -69,9 +71,9 @@ const MatchDetails = () => {
   const matchDate = new Date(match.matchDate);
   const isFinished = match.status === 'COMPLETED';
 
-  // تجميع الإحصائيات حسب الفريق
-  const homeStats = match.stats?.filter(s => s.player?.teamId === match.homeTeamId) || [];
-  const awayStats = match.stats?.filter(s => s.player?.teamId === match.awayTeamId) || [];
+  // تجميع الإحصائيات حسب الفريق - استخدام homeTeamStats و awayTeamStats من الباكند
+  const homeStats = match.homeTeamStats || match.matchStats?.filter(s => s.player?.teamId === match.homeTeamId) || [];
+  const awayStats = match.awayTeamStats || match.matchStats?.filter(s => s.player?.teamId === match.awayTeamId) || [];
 
   return (
     <div className="space-y-4 sm:space-y-6">

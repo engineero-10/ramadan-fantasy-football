@@ -63,7 +63,8 @@ export const AuthProvider = ({ children }) => {
       register,
       logout,
       updateUser,
-      isAdmin: user?.role === 'ADMIN'
+      isOwner: user?.role === 'OWNER',
+      isAdmin: user?.role === 'ADMIN' || user?.role === 'OWNER'
     }}>
       {children}
     </AuthContext.Provider>

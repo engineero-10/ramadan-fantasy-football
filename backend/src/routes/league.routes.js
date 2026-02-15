@@ -24,6 +24,7 @@ router.post('/join', joinLeagueValidator, validate, leagueController.joinLeague)
 
 // Admin routes (league admins or system admin)
 router.put('/:id/members/:userId/role', idParamValidator, validate, leagueController.updateMemberRole);
+router.get('/:id/fantasy-teams', isAdmin, idParamValidator, validate, leagueController.getLeagueFantasyTeams);
 
 // System Admin routes
 router.post('/', isAdmin, createLeagueValidator, validate, leagueController.createLeague);

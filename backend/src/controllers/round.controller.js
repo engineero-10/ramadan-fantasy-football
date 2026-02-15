@@ -276,12 +276,17 @@ const completeRound = async (req, res, next) => {
     const pointsData = [];
     for (const team of fantasyTeams) {
       let roundPoints = 0;
-      
+      // احتساب النقاط مع مراعاة الكابتن والتريبل كابتن
       for (const fp of team.players) {
         const stats = fp.player.matchStats;
+        let basePoints = 0;
         if (stats.length > 0) {
-          roundPoints += stats.reduce((sum, s) => sum + s.points, 0);
+          basePoints = stats.reduce((sum, s) => sum + s.points, 0);
         }
+        let multiplier = 1;
+        if (fp.captainType === 'CAPTAIN') multiplier = 2;
+        else if (fp.captainType === 'TRIPLE_CAPTAIN') multiplier = 3;
+        roundPoints += basePoints * multiplier;
       }
 
       // Save points history

@@ -11,18 +11,18 @@ const POSITIONS = {
 };
 
 const PlayerDetails = () => {
-  const { id } = useParams();
+  const { playerId } = useParams();
   const [player, setPlayer] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchPlayer();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [playerId]);
 
   const fetchPlayer = async () => {
     try {
-      const response = await playerAPI.getById(id);
+      const response = await playerAPI.getById(playerId);
       setPlayer(response.data.player);
     } catch (error) {
       toast.error('خطأ في جلب بيانات اللاعب');

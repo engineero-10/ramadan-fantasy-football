@@ -65,13 +65,26 @@ const authenticate = async (req, res, next) => {
 };
 
 /**
- * Check if user is admin
+ * Check if user is admin or owner
  */
 const isAdmin = (req, res, next) => {
-  if (req.user.role !== 'ADMIN') {
+  if (req.user.role !== 'ADMIN' && req.user.role !== 'OWNER') {
     return res.status(403).json({
       status: 'error',
       message: 'غير مسموح - صلاحيات المشرف مطلوبة' // Forbidden - Admin access required
+    });
+  }
+  next();
+};
+
+/**
+ * Check if user is owner only
+ */
+const isOwner = (req, res, next) => {
+  if (req.user.role !== 'OWNER') {
+    return res.status(403).json({
+      status: 'error',
+      message: 'غير مسموح - صلاحيات المالك مطلوبة' // Forbidden - Owner access required
     });
   }
   next();
@@ -109,4 +122,4 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { authenticate, isAdmin, optionalAuth };
+module.exports = { authenticate, isAdmin, isOwner, optionalAuth };

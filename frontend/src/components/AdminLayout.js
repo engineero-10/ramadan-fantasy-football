@@ -3,7 +3,7 @@ import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const AdminLayout = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isOwner } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -15,7 +15,10 @@ const AdminLayout = () => {
 
   const navItems = [
     { path: '/admin', label: 'لوحة التحكم', icon: '📊', exact: true },
-    { path: '/admin/leagues', label: 'إدارة الدوريات', icon: '🏆' }
+    // Only show "Manage Admins" for Owner
+    ...(isOwner ? [{ path: '/admin/admins', label: 'إدارة العملاء', icon: '👥' }] : []),
+    { path: '/admin/leagues', label: 'إدارة الدوريات', icon: '🏆' },
+    { path: '/admin/member-teams', label: 'فرق الأعضاء', icon: '👤' }
   ];
 
   const isActive = (path, exact = false) => {
@@ -78,7 +81,9 @@ const AdminLayout = () => {
           <div className="px-6 py-4 flex items-center justify-between">
             <h1 className="text-xl font-bold text-gray-800">
               {location.pathname === '/admin' && 'لوحة التحكم'}
+              {location.pathname === '/admin/admins' && 'إدارة العملاء'}
               {location.pathname === '/admin/leagues' && 'إدارة الدوريات'}
+              {location.pathname === '/admin/member-teams' && 'فرق الأعضاء'}
               {location.pathname.includes('/admin/teams') && 'إدارة الفرق'}
               {location.pathname.includes('/admin/players') && 'إدارة اللاعبين'}
               {location.pathname.includes('/admin/rounds') && 'إدارة الجولات'}
@@ -93,7 +98,7 @@ const AdminLayout = () => {
                 </div>
                 <div className="text-sm">
                   <p className="font-medium text-gray-800">{user?.name}</p>
-                  <p className="text-gray-500">مشرف</p>
+                  <p className="text-gray-500">{isOwner ? 'مالك النظام' : 'مشرف'}</p>
                 </div>
               </div>
               

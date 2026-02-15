@@ -15,6 +15,7 @@ import Dashboard from './pages/Dashboard';
 import JoinLeague from './pages/JoinLeague';
 import CreateTeam from './pages/CreateTeam';
 import MyTeam from './pages/MyTeam';
+import RoundHistory from './pages/RoundHistory';
 import Transfers from './pages/Transfers';
 import Rounds from './pages/Rounds';
 import Matches from './pages/Matches';
@@ -31,9 +32,11 @@ import ManagePlayers from './pages/admin/ManagePlayers';
 import ManageRounds from './pages/admin/ManageRounds';
 import ManageMatches from './pages/admin/ManageMatches';
 import MatchStats from './pages/admin/MatchStats';
+import ManageAdmins from './pages/admin/ManageAdmins';
+import ViewMemberTeams from './pages/admin/ViewMemberTeams';
 
 // Protected Route Component
-const ProtectedRoute = ({ children, adminOnly = false, userOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, ownerOnly = false, userOnly = false }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -48,12 +51,18 @@ const ProtectedRoute = ({ children, adminOnly = false, userOnly = false }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (adminOnly && user.role !== 'ADMIN') {
+  // Owner-only pages (like manage admins)
+  if (ownerOnly && user.role !== 'OWNER') {
+    return <Navigate to="/admin" replace />;
+  }
+
+  // Admin or Owner can access admin pages
+  if (adminOnly && user.role !== 'ADMIN' && user.role !== 'OWNER') {
     return <Navigate to="/dashboard" replace />;
   }
 
   // منع الأدمن من الوصول لصفحات المستخدمين (الأدمن للإدارة فقط)
-  if (userOnly && user.role === 'ADMIN') {
+  if (userOnly && (user.role === 'ADMIN' || user.role === 'OWNER')) {
     return <Navigate to="/admin" replace />;
   }
 
@@ -85,6 +94,7 @@ function App() {
           <Route path="create-team/:leagueId" element={<ProtectedRoute userOnly><CreateTeam /></ProtectedRoute>} />
           <Route path="my-team" element={<ProtectedRoute userOnly><MyTeam /></ProtectedRoute>} />
           <Route path="my-team/:leagueId" element={<ProtectedRoute userOnly><MyTeam /></ProtectedRoute>} />
+          <Route path="round-history" element={<ProtectedRoute userOnly><RoundHistory /></ProtectedRoute>} />
           <Route path="transfers" element={<ProtectedRoute userOnly><Transfers /></ProtectedRoute>} />
           <Route path="transfers/:leagueId" element={<ProtectedRoute userOnly><Transfers /></ProtectedRoute>} />
           {/* صفحات عامة للمستخدم والأدمن */}
@@ -117,12 +127,14 @@ function App() {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="admins" element={<ProtectedRoute ownerOnly><ManageAdmins /></ProtectedRoute>} />
           <Route path="leagues" element={<ManageLeagues />} />
           <Route path="teams" element={<ManageTeams />} />
           <Route path="players" element={<ManagePlayers />} />
           <Route path="rounds" element={<ManageRounds />} />
           <Route path="matches" element={<ManageMatches />} />
           <Route path="match-stats/:id" element={<MatchStats />} />
+          <Route path="member-teams" element={<ViewMemberTeams />} />
         </Route>
 
         {/* 404 */}

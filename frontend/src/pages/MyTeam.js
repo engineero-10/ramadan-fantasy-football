@@ -33,6 +33,7 @@ const MyTeam = () => {
   const [loading, setLoading] = useState(true);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [swapping, setSwapping] = useState(false);
+  const [captainMode, setCaptainMode] = useState(null); // null | 'CAPTAIN' | 'TRIPLE_CAPTAIN'
 
   // جلب كل الفرق أولاً
   useEffect(() => {
@@ -180,6 +181,7 @@ const MyTeam = () => {
   // اختيار لاعب للتبديل
   const selectForSwap = (fp) => {
     if (swapping) return;
+    if (captainMode) return; // تجاهل إذا كنا في وضع الكابتن
     if (!editAllowed) {
       toast.error('لا يمكن تعديل التشكيلة حالياً - الجولة جارية');
       return;
@@ -194,6 +196,24 @@ const MyTeam = () => {
         return;
       }
       handleSwap(selectedPlayer, fp);
+    }
+  };
+
+  // تعيين الكابتن
+  const handleSetCaptain = async (fp) => {
+    if (!captainMode) return;
+    if (!fp.isStarter) {
+      toast.error('يجب اختيار لاعب أساسي ككابتن');
+      return;
+    }
+
+    try {
+      const res = await fantasyTeamAPI.setCaptain(fantasyTeam.id, fp.player.id, captainMode);
+      toast.success(res.data.message);
+      setFantasyTeam(res.data.fantasyTeam);
+      setCaptainMode(null);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'خطأ في تعيين الكابتن');
     }
   };
 
@@ -259,19 +279,24 @@ const MyTeam = () => {
               </div>
               <div className="flex gap-6">
                 <div className="text-center">
-                  <p className="text-3xl font-bold">{fantasyTeam.totalPoints}</p>
+                  {/* إجمالي النقاط: يشمل الجولة الحالية إذا لم تكتمل بعد */}
+                  <p className="text-3xl font-bold">
+                    {currentRound && !currentRound.isCompleted 
+                      ? (fantasyTeam.totalPoints || 0) + (roundPoints?.roundPoints || 0)
+                      : fantasyTeam.totalPoints || 0}
+                  </p>
                   <p className="text-sm text-white/80">إجمالي النقاط</p>
                 </div>
+                {currentRound && (
+                  <div className="text-center">
+                    <p className="text-3xl font-bold text-yellow-300">{roundPoints?.roundPoints ?? 0}</p>
+                    <p className="text-sm text-white/80">نقاط الجولة</p>
+                  </div>
+                )}
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-300">{parseFloat(fantasyTeam.budget || 0).toFixed(1)}$</p>
                   <p className="text-sm text-white/80">الميزانية</p>
                 </div>
-                {roundPoints && (
-                  <div className="text-center">
-                    <p className="text-3xl font-bold">{roundPoints.roundPoints || 0}</p>
-                    <p className="text-sm text-white/80">نقاط الجولة</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -309,6 +334,9 @@ const MyTeam = () => {
                 <Link to={`/matches?round=${currentRound.id}`} className="btn-secondary text-sm">
                   ⚽ المباريات
                 </Link>
+                <Link to={`/round-history?leagueId=${fantasyTeam.leagueId}`} className="btn-secondary text-sm">
+                  📊 سجل الجولات
+                </Link>
               </div>
             </div>
           </div>
@@ -321,6 +349,12 @@ const MyTeam = () => {
           <span className="text-4xl">📅</span>
           <p className="text-gray-600 mt-2">لا توجد جولة حالية</p>
           <p className="text-sm text-gray-500">انتظر حتى يفتح المشرف جولة جديدة</p>
+          <Link 
+            to={`/round-history?leagueId=${fantasyTeam.leagueId}`} 
+            className="btn-secondary text-sm mt-4 inline-block"
+          >
+            📊 سجل الجولات السابقة
+          </Link>
         </div>
       )}
 
@@ -362,16 +396,61 @@ const MyTeam = () => {
         </div>
       )}
 
-      {editAllowed && !selectedPlayer && (
+      {editAllowed && !selectedPlayer && !captainMode && (
         <div className="card bg-green-50 border border-green-300">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">✏️</span>
-            <div>
-              <p className="font-medium text-green-800">يمكنك تعديل التشكيلة</p>
-              <p className="text-sm text-green-600">
-                اضغط على أي لاعب لتبديله مع لاعب آخر من نفس المركز
-              </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">✏️</span>
+              <div>
+                <p className="font-medium text-green-800">يمكنك تعديل التشكيلة</p>
+                <p className="text-sm text-green-600">
+                  اضغط على أي لاعب لتبديله مع لاعب آخر من نفس المركز
+                </p>
+              </div>
             </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCaptainMode('CAPTAIN')}
+                className="px-3 py-2 bg-yellow-500 text-white text-sm rounded-lg hover:bg-yellow-600 font-medium"
+              >
+                👑 اختر الكابتن
+              </button>
+              {!fantasyTeam?.tripleCaptainUsed && (
+                <button
+                  onClick={() => setCaptainMode('TRIPLE_CAPTAIN')}
+                  className="px-3 py-2 bg-purple-500 text-white text-sm rounded-lg hover:bg-purple-600 font-medium"
+                >
+                  🔥 تريبل كابتن
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Captain Mode Banner */}
+      {captainMode && (
+        <div className={`card border-2 ${captainMode === 'TRIPLE_CAPTAIN' ? 'bg-purple-50 border-purple-300' : 'bg-yellow-50 border-yellow-300'}`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{captainMode === 'TRIPLE_CAPTAIN' ? '🔥' : '👑'}</span>
+              <div>
+                <p className={`font-medium ${captainMode === 'TRIPLE_CAPTAIN' ? 'text-purple-800' : 'text-yellow-800'}`}>
+                  {captainMode === 'TRIPLE_CAPTAIN' ? 'اختر لاعب التريبل كابتن (x3 نقاط)' : 'اختر الكابتن (x2 نقاط)'}
+                </p>
+                <p className={`text-sm ${captainMode === 'TRIPLE_CAPTAIN' ? 'text-purple-600' : 'text-yellow-600'}`}>
+                  {captainMode === 'TRIPLE_CAPTAIN' 
+                    ? 'تحذير: التريبل كابتن يُستخدم مرة واحدة فقط طوال الموسم!'
+                    : 'اضغط على لاعب أساسي لتعيينه كابتن'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setCaptainMode(null)}
+              className="px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300"
+            >
+              إلغاء
+            </button>
           </div>
         </div>
       )}
@@ -402,8 +481,9 @@ const MyTeam = () => {
                   fantasyPlayer={fp} 
                   roundPoints={roundPoints}
                   isSelected={selectedPlayer?.id === fp.id}
-                  onSelect={() => selectForSwap(fp)}
+                  onSelect={() => captainMode ? handleSetCaptain(fp) : selectForSwap(fp)}
                   canSwap={!selectedPlayer || selectedPlayer.player.position === fp.player.position}
+                  captainMode={captainMode}
                 />
               ))}
             </div>
@@ -416,8 +496,9 @@ const MyTeam = () => {
                   fantasyPlayer={fp} 
                   roundPoints={roundPoints}
                   isSelected={selectedPlayer?.id === fp.id}
-                  onSelect={() => selectForSwap(fp)}
+                  onSelect={() => captainMode ? handleSetCaptain(fp) : selectForSwap(fp)}
                   canSwap={!selectedPlayer || selectedPlayer.player.position === fp.player.position}
+                  captainMode={captainMode}
                 />
               ))}
             </div>
@@ -430,8 +511,9 @@ const MyTeam = () => {
                   fantasyPlayer={fp} 
                   roundPoints={roundPoints}
                   isSelected={selectedPlayer?.id === fp.id}
-                  onSelect={() => selectForSwap(fp)}
+                  onSelect={() => captainMode ? handleSetCaptain(fp) : selectForSwap(fp)}
                   canSwap={!selectedPlayer || selectedPlayer.player.position === fp.player.position}
+                  captainMode={captainMode}
                 />
               ))}
             </div>
@@ -444,8 +526,9 @@ const MyTeam = () => {
                   fantasyPlayer={fp} 
                   roundPoints={roundPoints}
                   isSelected={selectedPlayer?.id === fp.id}
-                  onSelect={() => selectForSwap(fp)}
+                  onSelect={() => captainMode ? handleSetCaptain(fp) : selectForSwap(fp)}
                   canSwap={!selectedPlayer || selectedPlayer.player.position === fp.player.position}
+                  captainMode={captainMode}
                 />
               ))}
             </div>
@@ -468,6 +551,7 @@ const MyTeam = () => {
                   onSelect={() => selectForSwap(fp)}
                   canSwap={!selectedPlayer || selectedPlayer.player.position === fp.player.position}
                   isBench
+                  captainMode={captainMode}
                 />
               ))
             ) : (
@@ -560,34 +644,61 @@ const MyTeam = () => {
 };
 
 // مكون بطاقة اللاعب على الملعب
-const PlayerCard = ({ fantasyPlayer, roundPoints, isSelected, onSelect, canSwap, isBench }) => {
+const PlayerCard = ({ fantasyPlayer, roundPoints, isSelected, onSelect, canSwap, isBench, captainMode }) => {
   const player = fantasyPlayer.player;
   if (!player) return null;
 
-  // حساب نقاط الجولة للاعب
-  const playerRoundPoints = roundPoints?.playerPoints?.find(
+  // حساب نقاط الجولة للاعب من playerBreakdown
+  const playerRoundPoints = roundPoints?.playerBreakdown?.find(
     pp => pp.playerId === player.id
   )?.points || 0;
+
+  const isCaptain = fantasyPlayer.captainType === 'CAPTAIN';
+  const isTripleCaptain = fantasyPlayer.captainType === 'TRIPLE_CAPTAIN';
+
+  // تحديد إذا كان اللاعب قابل للاختيار في وضع الكابتن
+  const canSelectAsCaptain = captainMode && fantasyPlayer.isStarter;
 
   return (
     <button
       onClick={onSelect}
-      disabled={!canSwap}
-      className={`rounded-md sm:rounded-lg p-1.5 sm:p-2 text-center min-w-[55px] sm:min-w-[75px] max-w-[65px] sm:max-w-[85px] shadow-lg transition-all cursor-pointer ${
+      disabled={captainMode ? !canSelectAsCaptain : !canSwap}
+      className={`relative rounded-md sm:rounded-lg p-1.5 sm:p-2 text-center min-w-[55px] sm:min-w-[75px] max-w-[65px] sm:max-w-[85px] shadow-lg transition-all cursor-pointer ${
         isSelected 
           ? 'bg-yellow-400 ring-2 sm:ring-4 ring-yellow-300 scale-105 sm:scale-110' 
-          : isBench 
-            ? 'bg-gray-200 hover:bg-gray-300'
-            : 'bg-white hover:bg-gray-50'
-      } ${!canSwap && !isSelected ? 'opacity-40 cursor-not-allowed' : ''}`}
+          : captainMode && canSelectAsCaptain
+            ? captainMode === 'TRIPLE_CAPTAIN'
+              ? 'bg-purple-100 ring-2 ring-purple-400 hover:bg-purple-200'
+              : 'bg-yellow-100 ring-2 ring-yellow-400 hover:bg-yellow-200'
+            : isBench 
+              ? 'bg-gray-200 hover:bg-gray-300'
+              : isCaptain
+                ? 'bg-yellow-100 ring-2 ring-yellow-500'
+                : isTripleCaptain
+                  ? 'bg-purple-100 ring-2 ring-purple-500'
+                  : 'bg-white hover:bg-gray-50'
+      } ${(!canSwap && !isSelected && !captainMode) || (captainMode && !canSelectAsCaptain) ? 'opacity-40 cursor-not-allowed' : ''}`}
     >
+      {/* شارة الكابتن */}
+      {(isCaptain || isTripleCaptain) && (
+        <div className={`absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
+          isTripleCaptain ? 'bg-purple-500 text-white' : 'bg-yellow-500 text-white'
+        }`}>
+          {isTripleCaptain ? '3x' : 'C'}
+        </div>
+      )}
+      
       <div className="text-lg sm:text-2xl mb-0.5 sm:mb-1">{POSITIONS[player.position]?.icon}</div>
       <p className="text-[10px] sm:text-xs font-bold truncate">{player.name.split(' ')[0]}</p>
       <p className="text-[9px] sm:text-xs text-gray-500 truncate">{player.team?.shortName || player.team?.name?.substring(0, 4)}</p>
       <p className="text-[9px] sm:text-xs text-green-600 font-medium">{parseFloat(player.price || 0).toFixed(1)}$</p>
       {playerRoundPoints > 0 && (
-        <span className="inline-block bg-green-100 text-green-700 text-[9px] sm:text-xs px-1 rounded mt-0.5 sm:mt-1">
-          +{playerRoundPoints}
+        <span className={`inline-block text-[9px] sm:text-xs px-1 rounded mt-0.5 sm:mt-1 ${
+          isCaptain || isTripleCaptain 
+            ? 'bg-green-200 text-green-800 font-bold' 
+            : 'bg-green-100 text-green-700'
+        }`}>
+          +{playerRoundPoints}{(isCaptain || isTripleCaptain) && ` (x${isTripleCaptain ? 3 : 2})`}
         </span>
       )}
       {isSelected && <span className="block text-[9px] sm:text-xs mt-0.5 sm:mt-1">✓</span>}

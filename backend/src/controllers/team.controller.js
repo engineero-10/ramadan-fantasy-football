@@ -49,7 +49,7 @@ const createTeam = async (req, res, next) => {
 };
 
 /**
- * Get teams by league (or all teams for admin)
+ * Get teams by league (filtered by admin ownership if admin)
  * GET /api/teams
  */
 const getTeams = async (req, res, next) => {
@@ -57,8 +57,16 @@ const getTeams = async (req, res, next) => {
     const { leagueId, page = 1, limit = 20 } = req.query;
     const { skip, take } = paginate(parseInt(page), parseInt(limit));
 
-    // بناء شرط البحث - leagueId اختياري للمشرفين
-    const where = leagueId ? { leagueId: parseInt(leagueId) } : {};
+    // Build where clause
+    let where = {};
+    
+    // If leagueId provided, use it
+    if (leagueId) {
+      where.leagueId = parseInt(leagueId);
+    } else if (req.user?.role === 'ADMIN') {
+      // Admins only see teams from their own leagues
+      where.league = { createdById: req.user.id };
+    }
 
     const [teams, total] = await Promise.all([
       prisma.team.findMany({

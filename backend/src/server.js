@@ -19,6 +19,7 @@ const roundRoutes = require('./routes/round.routes');
 const fantasyTeamRoutes = require('./routes/fantasyTeam.routes');
 const transferRoutes = require('./routes/transfer.routes');
 const leaderboardRoutes = require('./routes/leaderboard.routes');
+const adminManagementRoutes = require('./routes/adminManagement.routes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -71,6 +72,7 @@ app.use('/api/rounds', roundRoutes);
 app.use('/api/fantasy-teams', fantasyTeamRoutes);
 app.use('/api/transfers', transferRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/admin-management', adminManagementRoutes);
 
 // 404 handler
 app.use((req, res) => {

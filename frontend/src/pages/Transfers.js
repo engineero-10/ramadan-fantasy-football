@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { fantasyTeamAPI, playerAPI, transferAPI, roundAPI } from '../services/api';
 import toast from 'react-hot-toast';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -13,6 +13,12 @@ const POSITIONS = {
 // مكون العد التنازلي
 const CountdownTimer = ({ targetDate, onExpire }) => {
   const [timeLeft, setTimeLeft] = useState('');
+  const hasExpiredRef = useRef(false);
+
+  useEffect(() => {
+    // Reset expired flag when targetDate changes
+    hasExpiredRef.current = false;
+  }, [targetDate]);
 
   useEffect(() => {
     const calculateTimeLeft = () => {
@@ -22,7 +28,11 @@ const CountdownTimer = ({ targetDate, onExpire }) => {
 
       if (diff <= 0) {
         setTimeLeft('انتهى الوقت');
-        if (onExpire) onExpire();
+        // Only call onExpire once
+        if (onExpire && !hasExpiredRef.current) {
+          hasExpiredRef.current = true;
+          onExpire();
+        }
         return;
       }
 
@@ -57,6 +67,7 @@ const Transfers = () => {
   const [transferHistory, setTransferHistory] = useState([]);
   const [remainingTransfers, setRemainingTransfers] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [transfersExpired, setTransfersExpired] = useState(false); // حالة انتهاء وقت الانتقالات
   
   // Transfer State
   const [selectedOutPlayer, setSelectedOutPlayer] = useState(null);
@@ -74,6 +85,7 @@ const Transfers = () => {
   // عند تغيير الدوري المحدد، جلب بيانات الفريق
   useEffect(() => {
     if (selectedLeagueId) {
+      setTransfersExpired(false); // إعادة تعيين حالة انتهاء الوقت
       fetchTeamData(selectedLeagueId);
     }
   }, [selectedLeagueId]);
@@ -206,8 +218,8 @@ const Transfers = () => {
     );
   }
 
-  // الأدمن يتحكم في فتح/إغلاق الانتقالات
-  const transfersOpen = currentRound?.transfersOpen;
+  // الأدمن يتحكم في فتح/إغلاق الانتقالات - أو انتهى الوقت محلياً
+  const transfersOpen = currentRound?.transfersOpen && !transfersExpired;
 
   return (
     <div className="space-y-6">
@@ -257,7 +269,10 @@ const Transfers = () => {
                       <div className="text-xl text-red-600">
                         <CountdownTimer 
                           targetDate={currentRound.lockTime} 
-                          onExpire={() => window.location.reload()}
+                          onExpire={() => {
+                            toast.success('تم إغلاق الانتقالات');
+                            setTransfersExpired(true);
+                          }}
                         />
                       </div>
                     </div>

@@ -61,7 +61,8 @@ const getRoundLeaderboard = async (req, res, next) => {
     const { page = 1, limit = 50 } = req.query;
     const { skip, take } = paginate(parseInt(page), parseInt(limit));
 
-    const [pointsHistory, total] = await Promise.all([
+    // أولاً: محاولة جلب نقاط الجولة من pointsHistory (للجولات المكتملة)
+    const [pointsHistory, historyTotal] = await Promise.all([
       prisma.pointsHistory.findMany({
         where: {
           roundId: parseInt(roundId),
@@ -86,20 +87,92 @@ const getRoundLeaderboard = async (req, res, next) => {
       })
     ]);
 
-    // Format the leaderboard
-    const leaderboard = pointsHistory.map((ph, index) => ({
+    // إذا وجدت pointsHistory، استخدمها
+    if (pointsHistory.length > 0) {
+      const leaderboard = pointsHistory.map((ph, index) => ({
+        rank: skip + index + 1,
+        id: ph.fantasyTeamId,
+        fantasyTeamId: ph.fantasyTeamId,
+        name: ph.fantasyTeam.name,
+        teamName: ph.fantasyTeam.name,
+        user: ph.fantasyTeam.user,
+        userName: ph.fantasyTeam.user.name,
+        userId: ph.fantasyTeam.userId,
+        roundPoints: ph.points,
+        totalPoints: ph.fantasyTeam.totalPoints
+      }));
+
+      return res.json(
+        formatResponse('success', 'تم جلب ترتيب الجولة', {
+          leaderboard,
+          pagination: paginationMeta(historyTotal, parseInt(page), parseInt(limit))
+        })
+      );
+    }
+
+    // ثانياً: حساب النقاط مباشرة من matchStats (للجولات غير المكتملة)
+    const fantasyTeams = await prisma.fantasyTeam.findMany({
+      where: { leagueId: parseInt(leagueId) },
+      include: {
+        user: { select: { id: true, name: true } },
+        players: {
+          where: { isStarter: true },
+          include: {
+            player: {
+              include: {
+                matchStats: {
+                  where: {
+                    match: { roundId: parseInt(roundId) }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // حساب نقاط كل فريق مع مضاعف الكابتن
+    const teamsWithPoints = fantasyTeams.map(team => {
+      let roundPoints = 0;
+      for (const fp of team.players) {
+        const stats = fp.player.matchStats;
+        if (stats.length > 0) {
+          let basePoints = stats.reduce((sum, s) => sum + s.points, 0);
+          // تطبيق مضاعف الكابتن
+          let multiplier = 1;
+          if (fp.captainType === 'CAPTAIN') multiplier = 2;
+          else if (fp.captainType === 'TRIPLE_CAPTAIN') multiplier = 3;
+          roundPoints += basePoints * multiplier;
+        }
+      }
+      return {
+        id: team.id,
+        fantasyTeamId: team.id,
+        name: team.name,
+        teamName: team.name,
+        user: team.user,
+        userName: team.user.name,
+        userId: team.userId,
+        roundPoints,
+        totalPoints: team.totalPoints
+      };
+    });
+
+    // ترتيب حسب النقاط
+    teamsWithPoints.sort((a, b) => b.roundPoints - a.roundPoints);
+
+    // تطبيق pagination
+    const paginatedTeams = teamsWithPoints.slice(skip, skip + take);
+    const leaderboard = paginatedTeams.map((team, index) => ({
       rank: skip + index + 1,
-      fantasyTeamId: ph.fantasyTeamId,
-      teamName: ph.fantasyTeam.name,
-      userName: ph.fantasyTeam.user.name,
-      roundPoints: ph.points,
-      totalPoints: ph.fantasyTeam.totalPoints
+      ...team
     }));
 
     res.json(
       formatResponse('success', 'تم جلب ترتيب الجولة', {
         leaderboard,
-        pagination: paginationMeta(total, parseInt(page), parseInt(limit))
+        pagination: paginationMeta(teamsWithPoints.length, parseInt(page), parseInt(limit))
       })
     );
   } catch (error) {
@@ -177,6 +250,8 @@ const getLeagueStats = async (req, res, next) => {
       totalTeams,
       totalTransfers,
       avgPoints,
+      topTeam,
+      highestRoundHistory,
       topScorer,
       mostTransferred
     ] = await Promise.all([
@@ -196,6 +271,27 @@ const getLeagueStats = async (req, res, next) => {
       prisma.fantasyTeam.aggregate({
         where: { leagueId: parseInt(leagueId) },
         _avg: { totalPoints: true }
+      }),
+      
+      // Top team (leader)
+      prisma.fantasyTeam.findFirst({
+        where: { leagueId: parseInt(leagueId) },
+        orderBy: { totalPoints: 'desc' },
+        include: {
+          user: { select: { id: true, name: true } }
+        }
+      }),
+      
+      // Highest round points
+      prisma.pointsHistory.findFirst({
+        where: {
+          fantasyTeam: { leagueId: parseInt(leagueId) }
+        },
+        orderBy: { points: 'desc' },
+        include: {
+          fantasyTeam: { select: { id: true, name: true } },
+          round: { select: { id: true, name: true } }
+        }
       }),
       
       // Top scoring player
@@ -250,6 +346,20 @@ const getLeagueStats = async (req, res, next) => {
       totalTeams,
       totalTransfers,
       averagePoints: avgPoints._avg.totalPoints?.toFixed(2) || 0,
+      // إضافة بيانات المتصدر
+      topTeam: topTeam ? {
+        id: topTeam.id,
+        name: topTeam.name,
+        totalPoints: topTeam.totalPoints,
+        userName: topTeam.user?.name
+      } : null,
+      // إضافة أعلى نقاط في جولة
+      highestRoundPoints: highestRoundHistory?.points || 0,
+      highestRoundInfo: highestRoundHistory ? {
+        teamName: highestRoundHistory.fantasyTeam?.name,
+        roundName: highestRoundHistory.round?.name,
+        points: highestRoundHistory.points
+      } : null,
       topScorers: playersWithPoints,
       mostTransferredPlayers
     }));

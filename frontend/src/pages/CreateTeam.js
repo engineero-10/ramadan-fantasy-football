@@ -3,12 +3,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { leagueAPI, playerAPI, fantasyTeamAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
-// تصنيف اللاعبين حسب المركز
+// تصنيف اللاعبين حسب المركز مع متطلبات كل مركز
+// التشكيلة: 1 حارس، 2 مدافع، 3 وسط، 2 هجوم = 8 أساسيين
+// البدلاء: 1 حارس، 1 مدافع، 1 وسط، 1 هجوم = 4 بدلاء
+// الإجمالي: 2 حارس، 3 مدافع، 4 وسط، 3 هجوم = 12 لاعب
 const POSITIONS = {
-  GOALKEEPER: { name: 'حارس مرمى', icon: '🧤' },
-  DEFENDER: { name: 'مدافع', icon: '🛡️' },
-  MIDFIELDER: { name: 'وسط', icon: '🎯' },
-  FORWARD: { name: 'مهاجم', icon: '⚽' },
+  GOALKEEPER: { name: 'حارس مرمى', icon: '🧤', total: 2, starters: 1, substitutes: 1 },
+  DEFENDER: { name: 'مدافع', icon: '🛡️', total: 3, starters: 2, substitutes: 1 },
+  MIDFIELDER: { name: 'وسط', icon: '🎯', total: 4, starters: 3, substitutes: 1 },
+  FORWARD: { name: 'مهاجم', icon: '⚽', total: 3, starters: 2, substitutes: 1 },
 };
 
 // القواعد الافتراضية (تأتي من الدوري)
@@ -104,6 +107,15 @@ const CreateTeam = () => {
   const startersCount = selectedPlayers.filter(sp => sp.isStarter).length;
   const substitutesCount = selectedPlayers.filter(sp => !sp.isStarter).length;
 
+  // حساب عدد اللاعبين في كل مركز
+  const getPositionCount = (position, isStarter = null) => {
+    return selectedPlayers.filter(sp => {
+      const matchesPosition = sp.player.position === position;
+      if (isStarter === null) return matchesPosition;
+      return matchesPosition && sp.isStarter === isStarter;
+    }).length;
+  };
+
   // التحقق من إمكانية إضافة لاعب
   const canAddPlayer = (player, asStarter) => {
     if (!player || !player.position) return false;
@@ -118,6 +130,22 @@ const CreateTeam = () => {
     // التحقق من عدد الأساسيين/البدلاء
     if (asStarter && startersCount >= leagueRules.starters) return false;
     if (!asStarter && substitutesCount >= leagueRules.substitutes) return false;
+    
+    // التحقق من متطلبات المراكز
+    const positionReq = POSITIONS[player.position];
+    if (positionReq) {
+      const totalInPosition = getPositionCount(player.position);
+      const startersInPosition = getPositionCount(player.position, true);
+      const substitutesInPosition = getPositionCount(player.position, false);
+      
+      // تجاوز الحد الأقصى للمركز
+      if (totalInPosition >= positionReq.total) return false;
+      // تجاوز الحد الأقصى للأساسيين في المركز
+      if (asStarter && startersInPosition >= positionReq.starters) return false;
+      // تجاوز الحد الأقصى للبدلاء في المركز
+      if (!asStarter && substitutesInPosition >= positionReq.substitutes) return false;
+    }
+    
     return true;
   };
 
@@ -135,10 +163,13 @@ const CreateTeam = () => {
         toast.success('تمت إضافة اللاعب كأساسي');
       } else {
         // عرض سبب المنع
+        const positionReq = POSITIONS[player.position];
         if (budgetUsed + parseFloat(player.price || 0) > leagueRules.budget) {
           toast.error('الميزانية غير كافية');
         } else if (getTeamPlayerCount(player.teamId) >= leagueRules.maxPerTeam) {
           toast.error(`لا يمكن اختيار أكثر من ${leagueRules.maxPerTeam} لاعبين من نفس الفريق`);
+        } else if (positionReq && getPositionCount(player.position) >= positionReq.total) {
+          toast.error(`اكتمل عدد لاعبي مركز ${positionReq.name}`);
         } else {
           toast.error('لا يمكن إضافة هذا اللاعب');
         }
@@ -153,10 +184,17 @@ const CreateTeam = () => {
 
   // تغيير حالة اللاعب (أساسي/بديل)
   const toggleStarterStatus = (playerId) => {
+    const playerToToggle = selectedPlayers.find(sp => sp.player.id === playerId);
+    if (!playerToToggle) return;
+    
+    const newIsStarter = !playerToToggle.isStarter;
+    const positionReq = POSITIONS[playerToToggle.player.position];
+    const startersInPosition = getPositionCount(playerToToggle.player.position, true);
+    const substitutesInPosition = getPositionCount(playerToToggle.player.position, false);
+    
     setSelectedPlayers(selectedPlayers.map(sp => {
       if (sp.player.id === playerId) {
-        const newIsStarter = !sp.isStarter;
-        // التحقق من الحدود
+        // التحقق من حدود الأساسيين/البدلاء العامة
         if (newIsStarter && startersCount >= leagueRules.starters) {
           toast.error('وصلت للحد الأقصى من الأساسيين');
           return sp;
@@ -165,6 +203,19 @@ const CreateTeam = () => {
           toast.error('وصلت للحد الأقصى من البدلاء');
           return sp;
         }
+        
+        // التحقق من حدود المراكز
+        if (positionReq) {
+          if (newIsStarter && startersInPosition >= positionReq.starters) {
+            toast.error(`وصلت للحد الأقصى من ${positionReq.name} الأساسيين`);
+            return sp;
+          }
+          if (!newIsStarter && substitutesInPosition >= positionReq.substitutes) {
+            toast.error(`وصلت للحد الأقصى من ${positionReq.name} البدلاء`);
+            return sp;
+          }
+        }
+        
         return { ...sp, isStarter: newIsStarter };
       }
       return sp;
@@ -332,7 +383,7 @@ const CreateTeam = () => {
 
       {/* Rules Summary */}
       <div className="card bg-blue-50 p-3 sm:p-6">
-        <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center">
+        <div className="grid grid-cols-4 gap-2 sm:gap-4 text-center mb-3 sm:mb-4">
           <div>
             <p className="text-lg sm:text-2xl font-bold text-green-600">{startersCount}/{leagueRules.starters}</p>
             <p className="text-[10px] sm:text-xs">أساسي</p>
@@ -348,6 +399,29 @@ const CreateTeam = () => {
           <div>
             <p className="text-lg sm:text-2xl font-bold text-purple-600">{budgetUsed.toFixed(1)}$</p>
             <p className="text-[10px] sm:text-xs">مستخدم</p>
+          </div>
+        </div>
+        
+        {/* متطلبات المراكز */}
+        <div className="border-t border-blue-200 pt-3 sm:pt-4">
+          <p className="text-[10px] sm:text-xs text-center text-blue-700 font-medium mb-2">متطلبات المراكز (أساسي / بديل)</p>
+          <div className="grid grid-cols-4 gap-1 sm:gap-2 text-center">
+            {Object.entries(POSITIONS).map(([key, pos]) => {
+              const totalInPos = getPositionCount(key);
+              const startersInPos = getPositionCount(key, true);
+              const subsInPos = getPositionCount(key, false);
+              const isComplete = totalInPos === pos.total && startersInPos === pos.starters && subsInPos === pos.substitutes;
+              
+              return (
+                <div key={key} className={`p-1.5 sm:p-2 rounded-lg ${isComplete ? 'bg-green-100' : 'bg-white'}`}>
+                  <p className="text-sm sm:text-lg">{pos.icon}</p>
+                  <p className="text-[9px] sm:text-xs font-medium">{pos.name}</p>
+                  <p className={`text-[10px] sm:text-sm font-bold ${isComplete ? 'text-green-600' : 'text-gray-600'}`}>
+                    {startersInPos}/{pos.starters} + {subsInPos}/{pos.substitutes}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
