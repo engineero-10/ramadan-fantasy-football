@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { leagueAPI } from '../../services/api';
+import { leagueAPI, fantasyTeamAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const POSITIONS = {
@@ -17,8 +17,40 @@ const ViewMemberTeams = () => {
   const [leagues, setLeagues] = useState([]);
   const [selectedLeagueId, setSelectedLeagueId] = useState(leagueIdParam ? parseInt(leagueIdParam) : null);
   const [fantasyTeams, setFantasyTeams] = useState([]);
-  const [selectedTeam, setSelectedTeam] = useState(null);
+  // const [selectedTeam, setSelectedTeam] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Round history modal state
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyData, setHistoryData] = useState(null);
+  const [selectedHistoryRound, setSelectedHistoryRound] = useState(null);
+  const [historyTeam, setHistoryTeam] = useState(null);
+  // Open round history modal for a team
+  const openHistoryModal = async (team) => {
+    setHistoryLoading(true);
+    setShowHistoryModal(true);
+    setHistoryTeam(team);
+    setHistoryData(null);
+    setSelectedHistoryRound(null);
+    try {
+      const res = await fantasyTeamAPI.getHistory(team.id);
+      setHistoryData(res.data);
+      if (res.data.history && res.data.history.length > 0) {
+        setSelectedHistoryRound(res.data.history[res.data.history.length - 1]);
+      }
+    } catch (error) {
+      toast.error('خطأ في جلب سجل الجولات');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const closeHistoryModal = () => {
+    setShowHistoryModal(false);
+    setHistoryData(null);
+    setSelectedHistoryRound(null);
+    setHistoryTeam(null);
+  };
 
   useEffect(() => {
     const loadLeagues = async () => {
@@ -39,50 +71,43 @@ const ViewMemberTeams = () => {
     loadLeagues();
   }, [leagueIdParam]);
 
+
   useEffect(() => {
     if (selectedLeagueId) {
-      fetchFantasyTeams();
+      fetchTeamsWithLastRoundPoints();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLeagueId]);
 
-  const fetchFantasyTeams = async () => {
+  // جلب الفرق مع نقاط آخر جولة منتهية
+  const fetchTeamsWithLastRoundPoints = async () => {
     try {
       const response = await leagueAPI.getFantasyTeams(selectedLeagueId);
-      setFantasyTeams(response.data.fantasyTeams || []);
+      let teams = response.data.fantasyTeams || [];
+      // جلب سجل الجولات لكل فريق
+      const histories = await Promise.all(
+        teams.map(team =>
+          fantasyTeamAPI.getHistory(team.id)
+            .then(res => res.data?.history || [])
+            .catch(() => [])
+        )
+      );
+      // استخراج نقاط آخر جولة منتهية
+      teams = teams.map((team, idx) => {
+        const history = histories[idx];
+        const lastFinished = [...history].reverse().find(r => r.isCompleted);
+        return {
+          ...team,
+          lastFinishedRoundPoints: lastFinished ? lastFinished.roundPoints : null
+        };
+      });
+      setFantasyTeams(teams);
     } catch (error) {
-      toast.error('خطأ في جلب الفرق');
+      toast.error('خطأ في جلب الفرق أو نقاط آخر جولة');
     }
   };
 
-  const viewTeamDetails = (team) => {
-    setSelectedTeam(team);
-  };
 
-  const closeDetails = () => {
-    setSelectedTeam(null);
-  };
-
-  // تصنيف اللاعبين الأساسيين حسب المركز
-  const getStartersByPosition = (players) => {
-    if (!players) return { GOALKEEPER: [], DEFENDER: [], MIDFIELDER: [], FORWARD: [] };
-    
-    const groups = { GOALKEEPER: [], DEFENDER: [], MIDFIELDER: [], FORWARD: [] };
-    players
-      .filter(fp => fp.isStarter)
-      .forEach(fp => {
-        if (fp.player && groups[fp.player.position]) {
-          groups[fp.player.position].push(fp);
-        }
-      });
-    return groups;
-  };
-
-  // الحصول على البدلاء
-  const getSubstitutes = (players) => {
-    if (!players) return [];
-    return players.filter(fp => !fp.isStarter);
-  };
 
   if (loading) {
     return (
@@ -157,20 +182,233 @@ const ViewMemberTeams = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4">
-                  {/* النقاط */}
+                <div className="flex items-center gap-6">
+                  {/* نقاط آخر جولة منتهية */}
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-green-600">{team.lastFinishedRoundPoints ?? '--'}</p>
+                    <p className="text-xs text-gray-500">نقاط آخر جولة منتهية</p>
+                  </div>
+                  {/* إجمالي النقاط */}
                   <div className="text-center">
                     <p className="text-2xl font-bold text-primary-600">{team.totalPoints || 0}</p>
-                    <p className="text-xs text-gray-500">نقطة</p>
+                    <p className="text-xs text-gray-500">إجمالي النقاط</p>
                   </div>
-
-                  {/* زر العرض */}
+                  {/* زر سجل الجولات */}
                   <button
-                    onClick={() => viewTeamDetails(team)}
-                    className="btn-primary text-sm"
+                    onClick={() => openHistoryModal(team)}
+                    className="btn-secondary text-sm"
                   >
-                    👁️ عرض التشكيلة
+                    🗒️ سجل الجولات
                   </button>
+                      {/* Round History Modal */}
+                      {showHistoryModal && (
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-auto">
+                          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] overflow-auto">
+                            {/* Modal Header */}
+                            <div className="sticky top-0 bg-gradient-to-l from-primary-600 to-secondary-600 text-white p-4 sm:p-6 rounded-t-2xl z-10 flex items-center justify-between">
+                              <div>
+                                <h2 className="text-xl sm:text-2xl font-bold">سجل الجولات - {historyTeam?.name}</h2>
+                                <p className="text-white/80 text-sm sm:text-base">👤 {historyTeam?.user?.name} • 📧 {historyTeam?.user?.email}</p>
+                              </div>
+                              <button
+                                onClick={closeHistoryModal}
+                                className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30"
+                              >✕</button>
+                            </div>
+                            {/* Modal Content */}
+                            <div className="p-4 sm:p-6">
+                              {historyLoading ? (
+                                <div className="flex items-center justify-center min-h-[200px]">
+                                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+                                </div>
+                              ) : historyData && historyData.history && historyData.history.length > 0 ? (
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                  {/* Rounds Sidebar */}
+                                  <div className="lg:col-span-1">
+                                    <div className="bg-white rounded-xl shadow-sm p-4">
+                                      <h3 className="text-lg font-bold mb-4">الجولات</h3>
+                                      <div className="space-y-2 max-h-96 overflow-y-auto">
+                                        {historyData.history.map((round) => (
+                                          <button
+                                            key={round.roundId}
+                                            onClick={() => setSelectedHistoryRound(round)}
+                                            className={`w-full text-right p-3 rounded-lg transition ${
+                                              selectedHistoryRound?.roundId === round.roundId
+                                                ? 'bg-primary-100 border-2 border-primary-500'
+                                                : 'bg-gray-50 hover:bg-gray-100 border-2 border-transparent'
+                                            }`}
+                                          >
+                                            <div className="flex justify-between items-center">
+                                              <span className={`text-sm px-2 py-1 rounded ${
+                                                round.isCompleted 
+                                                  ? 'bg-gray-200 text-gray-600' 
+                                                  : 'bg-green-100 text-green-700'
+                                              }`}>
+                                                {round.isCompleted ? 'مكتملة' : 'جارية'}
+                                              </span>
+                                              <span className="font-bold">{round.roundName}</span>
+                                            </div>
+                                            <div className="flex justify-between items-center mt-2 text-sm text-gray-600">
+                                              <span>#{round.rank || '-'} / {round.totalTeams}</span>
+                                              <span className="font-bold text-primary-600">{round.roundPoints} نقطة</span>
+                                            </div>
+                                            <div className="text-xs text-gray-400 mt-1">
+                                              {new Date(round.startDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                            </div>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {/* Round Details */}
+                                  <div className="lg:col-span-2">
+                                    {selectedHistoryRound ? (
+                                      <div className="bg-white rounded-xl shadow-sm p-6">
+                                        {/* Round Header */}
+                                        <div className="flex justify-between items-center mb-6 pb-4 border-b">
+                                          <div>
+                                            <h3 className="text-xl font-bold">{selectedHistoryRound.roundName}</h3>
+                                            <p className="text-sm text-gray-500">
+                                              {new Date(selectedHistoryRound.startDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                              {' - '}
+                                              {new Date(selectedHistoryRound.endDate).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                                            </p>
+                                          </div>
+                                          <div className="text-center">
+                                            <span className={`px-3 py-1 rounded-full text-sm ${
+                                              selectedHistoryRound.isCompleted
+                                                ? 'bg-gray-100 text-gray-600'
+                                                : 'bg-green-100 text-green-700'
+                                            }`}>
+                                              {selectedHistoryRound.isCompleted ? '✅ مكتملة' : '▶️ جارية'}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        {/* Stats Summary */}
+                                        <div className="grid grid-cols-3 gap-4 mb-6">
+                                          <div className="bg-primary-50 rounded-lg p-4 text-center">
+                                            <p className="text-2xl font-bold text-primary-600">{selectedHistoryRound.roundPoints}</p>
+                                            <p className="text-sm text-gray-600">نقاط الجولة</p>
+                                          </div>
+                                          <div className="bg-yellow-50 rounded-lg p-4 text-center">
+                                            <p className="text-2xl font-bold text-yellow-600">#{selectedHistoryRound.rank || '-'}</p>
+                                            <p className="text-sm text-gray-600">ترتيب الجولة</p>
+                                          </div>
+                                          <div className="bg-gray-50 rounded-lg p-4 text-center">
+                                            <p className="text-2xl font-bold text-gray-600">{selectedHistoryRound.totalTeams}</p>
+                                            <p className="text-sm text-gray-600">إجمالي الفرق</p>
+                                          </div>
+                                        </div>
+                                        {/* Lineup */}
+                                        <div>
+                                          <h4 className="font-bold text-lg mb-4">⚽ تشكيلة الجولة</h4>
+                                          {selectedHistoryRound.lineup && selectedHistoryRound.lineup.length > 0 ? (
+                                            <div className="space-y-2">
+                                              {['GOALKEEPER', 'DEFENDER', 'MIDFIELDER', 'FORWARD'].map((pos) => {
+                                                const posPlayers = selectedHistoryRound.lineup.filter(p => p.position === pos);
+                                                if (posPlayers.length === 0) return null;
+                                                return (
+                                                  <div key={pos} className="mb-4">
+                                                    <div className={`flex items-center gap-2 mb-2 px-2 py-1 rounded ${POSITIONS[pos].color} text-white text-sm`}>
+                                                      <span>{POSITIONS[pos].icon}</span>
+                                                      <span>{POSITIONS[pos].name}</span>
+                                                    </div>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                      {posPlayers.map((player) => (
+                                                        <div
+                                                          key={player.playerId}
+                                                          className={`flex items-center justify-between p-3 rounded-lg ${
+                                                            player.captainType === 'TRIPLE_CAPTAIN' 
+                                                              ? 'bg-purple-50 border border-purple-200' 
+                                                              : player.captainType === 'CAPTAIN'
+                                                                ? 'bg-yellow-50 border border-yellow-200'
+                                                                : 'bg-gray-50'
+                                                          }`}
+                                                        >
+                                                          <div className="flex items-center gap-3">
+                                                            {/* شارة الكابتن */}
+                                                            {player.captainType && player.captainType !== 'NONE' && (
+                                                              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                                player.captainType === 'TRIPLE_CAPTAIN' 
+                                                                  ? 'bg-purple-500 text-white' 
+                                                                  : 'bg-yellow-500 text-white'
+                                                              }`}>
+                                                                {player.captainType === 'TRIPLE_CAPTAIN' ? '3x' : 'C'}
+                                                              </span>
+                                                            )}
+                                                            <span className="font-medium">{player.playerName}</span>
+                                                            <span className="text-xs text-gray-500">{player.team?.shortName || player.team?.name}</span>
+                                                          </div>
+                                                          <div className="flex items-center gap-2">
+                                                            {player.stats && (
+                                                              <div className="flex gap-1 text-xs">
+                                                                {player.stats.goals > 0 && (
+                                                                  <span className="px-1 bg-green-100 text-green-700 rounded">⚽{player.stats.goals}</span>
+                                                                )}
+                                                                {player.stats.assists > 0 && (
+                                                                  <span className="px-1 bg-blue-100 text-blue-700 rounded">👟{player.stats.assists}</span>
+                                                                )}
+                                                                {player.stats.cleanSheet && (
+                                                                  <span className="px-1 bg-purple-100 text-purple-700 rounded">🧤</span>
+                                                                )}
+                                                                {player.stats.yellowCards > 0 && (
+                                                                  <span className="px-1 bg-yellow-100 text-yellow-700 rounded">🟨</span>
+                                                                )}
+                                                                {player.stats.redCards > 0 && (
+                                                                  <span className="px-1 bg-red-100 text-red-700 rounded">🟥</span>
+                                                                )}
+                                                              </div>
+                                                            )}
+                                                            <div className="flex flex-col items-end">
+                                                              {player.multiplier > 1 && (
+                                                                <span className="text-xs text-gray-500">{player.basePoints} × {player.multiplier}</span>
+                                                              )}
+                                                              <span className={`font-bold px-2 py-1 rounded ${
+                                                                player.points > 0 
+                                                                  ? player.multiplier > 1 
+                                                                    ? 'bg-green-200 text-green-800' 
+                                                                    : 'bg-green-100 text-green-700' 
+                                                                  : player.points < 0
+                                                                    ? 'bg-red-100 text-red-700'
+                                                                    : 'bg-gray-100 text-gray-600'
+                                                              }`}>
+                                                                {player.points}
+                                                              </span>
+                                                            </div>
+                                                          </div>
+                                                        </div>
+                                                      ))}
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          ) : (
+                                            <div className="text-center py-8 text-gray-500">
+                                              <div className="text-4xl mb-2">📋</div>
+                                              <p>لا توجد تشكيلة لهذه الجولة</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <div className="bg-white rounded-xl shadow-sm p-6 text-center">
+                                        <div className="text-4xl mb-4">📊</div>
+                                        <p className="text-gray-500">اختر جولة لعرض التفاصيل</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-center min-h-[200px]">
+                                  <div className="text-4xl mb-2">📋</div>
+                                  <p className="text-gray-500">لا يوجد سجل جولات متاح لهذا الفريق</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                 </div>
               </div>
             ))}
@@ -179,142 +417,7 @@ const ViewMemberTeams = () => {
       </div>
 
       {/* Team Details Modal */}
-      {selectedTeam && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-auto">
-          <div className="bg-white rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-auto">
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-gradient-to-l from-primary-600 to-secondary-600 text-white p-4 sm:p-6 rounded-t-2xl z-10">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-xl sm:text-2xl font-bold">{selectedTeam.name}</h2>
-                  <p className="text-white/80 text-sm sm:text-base">
-                    👤 {selectedTeam.user?.name} • 📧 {selectedTeam.user?.email}
-                  </p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <p className="text-2xl sm:text-3xl font-bold">{selectedTeam.totalPoints || 0}</p>
-                    <p className="text-xs text-white/80">إجمالي النقاط</p>
-                  </div>
-                  <button
-                    onClick={closeDetails}
-                    className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            </div>
 
-            {/* Modal Content */}
-            <div className="p-4 sm:p-6">
-              {selectedTeam.players && selectedTeam.players.length > 0 ? (
-                <div className="space-y-6">
-                  {/* Field Formation */}
-                  <div className="bg-gradient-to-b from-green-700 to-green-600 rounded-xl p-2 sm:p-4 relative overflow-hidden" style={{ minHeight: '320px' }}>
-                    {/* Field Lines */}
-                    <div className="absolute inset-2 sm:inset-4 border-2 border-white/30 rounded-lg"></div>
-                    <div className="absolute top-1/2 left-2 right-2 sm:left-4 sm:right-4 border-t-2 border-white/30"></div>
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 sm:w-20 sm:h-20 border-2 border-white/30 rounded-full"></div>
-                    <div className="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2 w-20 sm:w-32 h-8 sm:h-12 border-2 border-white/30 border-b-0"></div>
-                    
-                    {/* Players */}
-                    <div className="relative z-10 flex flex-col h-full justify-between py-2 sm:py-4" style={{ minHeight: '290px' }}>
-                      {/* Forwards */}
-                      <div className="flex justify-center gap-1 sm:gap-4 flex-wrap">
-                        {getStartersByPosition(selectedTeam.players).FORWARD?.map((fp) => (
-                          <PlayerCard key={fp.id} fantasyPlayer={fp} />
-                        ))}
-                      </div>
-
-                      {/* Midfielders */}
-                      <div className="flex justify-center gap-1 sm:gap-3 flex-wrap">
-                        {getStartersByPosition(selectedTeam.players).MIDFIELDER?.map((fp) => (
-                          <PlayerCard key={fp.id} fantasyPlayer={fp} />
-                        ))}
-                      </div>
-
-                      {/* Defenders */}
-                      <div className="flex justify-center gap-1 sm:gap-3 flex-wrap">
-                        {getStartersByPosition(selectedTeam.players).DEFENDER?.map((fp) => (
-                          <PlayerCard key={fp.id} fantasyPlayer={fp} />
-                        ))}
-                      </div>
-
-                      {/* Goalkeeper */}
-                      <div className="flex justify-center">
-                        {getStartersByPosition(selectedTeam.players).GOALKEEPER?.map((fp) => (
-                          <PlayerCard key={fp.id} fantasyPlayer={fp} />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Substitutes */}
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="font-bold mb-3">📋 البدلاء ({getSubstitutes(selectedTeam.players).length})</h3>
-                    <div className="flex flex-wrap justify-center gap-3">
-                      {getSubstitutes(selectedTeam.players).map((fp) => (
-                        <PlayerCard key={fp.id} fantasyPlayer={fp} isBench />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Players Table */}
-                  <div className="bg-gray-50 rounded-xl p-4">
-                    <h3 className="font-bold mb-3">📊 تفاصيل اللاعبين (النقاط الإجمالية)</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-gray-200">
-                            <th className="p-2 text-right">اللاعب</th>
-                            <th className="p-2 text-center">المركز</th>
-                            <th className="p-2 text-center">الفريق</th>
-                            <th className="p-2 text-center">السعر</th>
-                            <th className="p-2 text-center">الحالة</th>
-                            <th className="p-2 text-center">النقاط الإجمالية</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedTeam.players?.map(fp => (
-                            <tr key={fp.id} className="border-b hover:bg-gray-100">
-                              <td className="p-2 flex items-center gap-2">
-                                {fp.captainType === 'CAPTAIN' && <span className="text-yellow-500">👑</span>}
-                                {fp.captainType === 'TRIPLE_CAPTAIN' && <span className="text-purple-500">🔥</span>}
-                                {fp.player?.name}
-                              </td>
-                              <td className="p-2 text-center">
-                                <span className={`px-2 py-0.5 rounded text-xs ${POSITIONS[fp.player?.position]?.color} text-white`}>
-                                  {POSITIONS[fp.player?.position]?.name}
-                                </span>
-                              </td>
-                              <td className="p-2 text-center">{fp.player?.team?.shortName}</td>
-                              <td className="p-2 text-center">${parseFloat(fp.player?.price || 0).toFixed(1)}</td>
-                              <td className="p-2 text-center">
-                                <span className={`px-2 py-0.5 rounded text-xs ${fp.isStarter ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
-                                  {fp.isStarter ? '⭐ أساسي' : '📋 بديل'}
-                                </span>
-                              </td>
-                              <td className="p-2 text-center">
-                                <span className="font-bold text-primary-600">{fp.totalPoints || 0}</span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <span className="text-4xl">📭</span>
-                  <p className="mt-2">لم يتم إنشاء التشكيلة بعد</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
