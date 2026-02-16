@@ -422,51 +422,6 @@ const ViewMemberTeams = () => {
   );
 };
 
-// مكون بطاقة اللاعب - يعرض النقاط الإجمالية على مدار كل الجولات
-const PlayerCard = ({ fantasyPlayer, isBench }) => {
-  const player = fantasyPlayer.player;
-  if (!player) return null;
 
-  // النقاط الإجمالية للاعب في هذا الفريق
-  const totalPoints = fantasyPlayer.totalPoints || 0;
-
-  const isCaptain = fantasyPlayer.captainType === 'CAPTAIN';
-  const isTripleCaptain = fantasyPlayer.captainType === 'TRIPLE_CAPTAIN';
-
-  return (
-    <div className={`relative rounded-md sm:rounded-lg p-1.5 sm:p-2 text-center min-w-[55px] sm:min-w-[75px] max-w-[65px] sm:max-w-[85px] shadow-lg ${
-      isBench 
-        ? 'bg-gray-200'
-        : isCaptain
-          ? 'bg-yellow-100 ring-2 ring-yellow-500'
-          : isTripleCaptain
-            ? 'bg-purple-100 ring-2 ring-purple-500'
-            : 'bg-white'
-    }`}>
-      {/* شارة الكابتن */}
-      {(isCaptain || isTripleCaptain) && (
-        <div className={`absolute -top-1 -right-1 w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold ${
-          isTripleCaptain ? 'bg-purple-500 text-white' : 'bg-yellow-500 text-white'
-        }`}>
-          {isTripleCaptain ? '3x' : 'C'}
-        </div>
-      )}
-      
-      <div className="text-lg sm:text-2xl mb-0.5 sm:mb-1">{POSITIONS[player.position]?.icon}</div>
-      <p className="text-[10px] sm:text-xs font-bold truncate">{player.name.split(' ')[0]}</p>
-      <p className="text-[9px] sm:text-xs text-gray-500 truncate">{player.team?.shortName}</p>
-      <p className="text-[9px] sm:text-xs text-green-600 font-medium">{parseFloat(player.price || 0).toFixed(1)}$</p>
-      
-      {/* النقاط الإجمالية */}
-      <span className={`inline-block text-[9px] sm:text-xs px-1 rounded mt-0.5 sm:mt-1 font-bold ${
-        totalPoints > 0 
-          ? 'bg-green-200 text-green-800' 
-          : 'bg-gray-100 text-gray-600'
-      }`}>
-        {totalPoints} نقطة
-      </span>
-    </div>
-  );
-};
 
 export default ViewMemberTeams;
