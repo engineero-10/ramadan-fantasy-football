@@ -88,10 +88,35 @@ const getMatches = async (req, res, next) => {
 
     const where = {};
 
+    let adminLeagueId = null;
+    // إذا كان المستخدم ADMIN وليس OWNER، أظهر له مباريات الدوري الخاص به فقط
+    if (req.user.role === 'ADMIN') {
+      // ابحث عن الدوري الذي هو مشرف عليه
+      const leagueMember = await prisma.leagueMember.findFirst({
+        where: {
+          userId: req.user.id,
+          role: 'ADMIN'
+        },
+        select: { leagueId: true }
+      });
+      if (leagueMember) {
+        adminLeagueId = leagueMember.leagueId;
+      } else {
+        // إذا لم يكن عضو ADMIN، ابحث عن دوري أنشأه بنفسه
+        const league = await prisma.league.findFirst({
+          where: { createdById: req.user.id },
+          select: { id: true }
+        });
+        if (league) adminLeagueId = league.id;
+      }
+    }
+
     if (roundId) {
       where.roundId = parseInt(roundId);
     } else if (leagueId) {
       where.round = { leagueId: parseInt(leagueId) };
+    } else if (adminLeagueId) {
+      where.round = { leagueId: adminLeagueId };
     }
 
     if (teamId) {
