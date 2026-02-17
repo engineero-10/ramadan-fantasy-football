@@ -16,23 +16,73 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json'
   },
-  withCredentials: false // Set to false since we use Authorization header
+  withCredentials: false
 });
 
-// Add token to requests
+// ==================== IN-MEMORY CACHE (GET requests) ====================
+const CACHE_TTL_MS = 60 * 1000; // 1 minute
+const CACHE_MAX_ENTRIES = 200;
+const cache = new Map(); // key -> { data, expiry }
+
+function getCacheKey(config) {
+  const params = config.params && Object.keys(config.params).length
+    ? JSON.stringify(config.params)
+    : '';
+  return `${config.method}:${config.url}${params ? `?${params}` : ''}`;
+}
+
+function isCacheable(config) {
+  if (config.method !== 'get') return false;
+  const url = (config.url || '').toLowerCase();
+  if (url.includes('/auth/me') || url.includes('/auth/login')) return false;
+  return true;
+}
+
+function invalidateCache() {
+  cache.clear();
+}
+
+api.invalidateCache = invalidateCache;
+
+// Add token to requests & serve from cache for GET
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  if (isCacheable(config)) {
+    const key = getCacheKey(config);
+    const entry = cache.get(key);
+    if (entry && entry.expiry > Date.now()) {
+      config.adapter = () => Promise.resolve(entry.data);
+    }
+  }
   return config;
 });
 
-// Handle response errors
+// Store GET responses in cache; invalidate cache on mutations
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const config = response.config;
+    if (config.method === 'get' && isCacheable(config) && !response.config.adapter) {
+      const key = getCacheKey(config);
+      if (cache.size >= CACHE_MAX_ENTRIES) {
+        const firstKey = cache.keys().next().value;
+        if (firstKey !== undefined) cache.delete(firstKey);
+      }
+      cache.set(key, {
+        data: response,
+        expiry: Date.now() + CACHE_TTL_MS
+      });
+    }
+    if (config.method && ['post', 'put', 'patch', 'delete'].includes(config.method.toLowerCase())) {
+      invalidateCache();
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
+      invalidateCache();
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';

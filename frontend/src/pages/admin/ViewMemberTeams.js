@@ -111,30 +111,30 @@ const ViewMemberTeams = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
         <div className="text-center">
-          <div className="text-4xl animate-bounce mb-4">⚽</div>
-          <p className="text-gray-600">جاري التحميل...</p>
+          <div className="text-3xl sm:text-4xl animate-bounce mb-4">⚽</div>
+          <p className="text-gray-600 text-sm sm:text-base">جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-l from-indigo-600 to-purple-600 rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold mb-2">عرض فرق الأعضاء 👥</h1>
-        <p className="text-white/80">اختر دوري لعرض تشكيلات فرق الأعضاء مع النقاط الإجمالية</p>
+      <div className="bg-gradient-to-l from-indigo-600 to-purple-600 rounded-xl sm:rounded-2xl p-4 sm:p-6 text-white">
+        <h1 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">عرض فرق الأعضاء 👥</h1>
+        <p className="text-white/80 text-sm sm:text-base">اختر دوري لعرض تشكيلات فرق الأعضاء مع النقاط الإجمالية</p>
       </div>
 
       {/* League Selector */}
-      <div className="card">
-        <label className="block text-sm font-medium text-gray-700 mb-2">اختر الدوري:</label>
+      <div className="card p-3 sm:p-4">
+        <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-2">اختر الدوري:</label>
         <select
           value={selectedLeagueId || ''}
           onChange={(e) => setSelectedLeagueId(parseInt(e.target.value))}
-          className="input w-full"
+          className="input w-full text-sm sm:text-base"
         >
           {leagues.map(league => (
             <option key={league.id} value={league.id}>
@@ -145,24 +145,23 @@ const ViewMemberTeams = () => {
       </div>
 
       {/* Fantasy Teams List */}
-      <div className="card">
-        <h2 className="text-lg font-bold mb-4">فرق الفانتازي ({fantasyTeams.length})</h2>
+      <div className="card p-3 sm:p-6">
+        <h2 className="text-base sm:text-lg font-bold mb-3 sm:mb-4">فرق الفانتازي ({fantasyTeams.length})</h2>
         
         {fantasyTeams.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            <span className="text-4xl">📭</span>
-            <p className="mt-2">لا توجد فرق في هذا الدوري</p>
+          <div className="text-center py-6 sm:py-8 text-gray-500">
+            <span className="text-3xl sm:text-4xl">📭</span>
+            <p className="mt-2 text-sm sm:text-base">لا توجد فرق في هذا الدوري</p>
           </div>
         ) : (
           <div className="space-y-3">
             {fantasyTeams.map((team, index) => (
               <div 
                 key={team.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-gray-50 rounded-lg sm:rounded-xl hover:bg-gray-100 transition"
               >
-                <div className="flex items-center gap-4">
-                  {/* الترتيب */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-bold text-sm sm:text-base flex-shrink-0 ${
                     index === 0 ? 'bg-yellow-500 text-white' :
                     index === 1 ? 'bg-gray-400 text-white' :
                     index === 2 ? 'bg-amber-600 text-white' :
@@ -170,53 +169,46 @@ const ViewMemberTeams = () => {
                   }`}>
                     {index + 1}
                   </div>
-                  
-                  {/* معلومات الفريق */}
-                  <div>
-                    <h3 className="font-bold text-lg">{team.name}</h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <span>👤 {team.user?.name}</span>
-                      <span>•</span>
-                      <span>📧 {team.user?.email}</span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-sm sm:text-lg truncate">{team.name}</h3>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:text-sm text-gray-500">
+                      <span className="truncate">👤 {team.user?.name}</span>
+                      <span className="hidden sm:inline">•</span>
+                      <span className="truncate">📧 {team.user?.email}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6">
-                  {/* نقاط آخر جولة منتهية */}
+                <div className="flex flex-wrap items-center gap-3 sm:gap-6 flex-shrink-0">
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-green-600">{team.lastFinishedRoundPoints ?? '--'}</p>
-                    <p className="text-xs text-gray-500">نقاط آخر جولة منتهية</p>
+                    <p className="text-lg sm:text-2xl font-bold text-green-600">{team.lastFinishedRoundPoints ?? '--'}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">نقاط آخر جولة</p>
                   </div>
-                  {/* إجمالي النقاط */}
                   <div className="text-center">
-                    <p className="text-2xl font-bold text-primary-600">{team.totalPoints || 0}</p>
-                    <p className="text-xs text-gray-500">إجمالي النقاط</p>
+                    <p className="text-lg sm:text-2xl font-bold text-primary-600">{team.totalPoints || 0}</p>
+                    <p className="text-[10px] sm:text-xs text-gray-500">إجمالي النقاط</p>
                   </div>
-                  {/* زر سجل الجولات */}
                   <button
                     onClick={() => openHistoryModal(team)}
-                    className="btn-secondary text-sm"
+                    className="btn-secondary text-xs sm:text-sm py-1.5 px-3"
                   >
                     🗒️ سجل الجولات
                   </button>
-                      {/* Round History Modal */}
+                      {/* Round History Modal - rendered once, position in DOM inside map for simplicity */}
                       {showHistoryModal && (
-                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-auto">
-                          <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[95vh] overflow-auto">
-                            {/* Modal Header */}
-                            <div className="sticky top-0 bg-gradient-to-l from-primary-600 to-secondary-600 text-white p-4 sm:p-6 rounded-t-2xl z-10 flex items-center justify-between">
-                              <div>
-                                <h2 className="text-xl sm:text-2xl font-bold">سجل الجولات - {historyTeam?.name}</h2>
-                                <p className="text-white/80 text-sm sm:text-base">👤 {historyTeam?.user?.name} • 📧 {historyTeam?.user?.email}</p>
+                        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 overflow-auto">
+                          <div className="bg-white rounded-xl sm:rounded-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col my-4">
+                            <div className="sticky top-0 bg-gradient-to-l from-primary-600 to-secondary-600 text-white p-3 sm:p-6 rounded-t-xl sm:rounded-t-2xl z-10 flex items-center justify-between gap-2">
+                              <div className="min-w-0 flex-1">
+                                <h2 className="text-base sm:text-2xl font-bold truncate">سجل الجولات - {historyTeam?.name}</h2>
+                                <p className="text-white/80 text-xs sm:text-base truncate">👤 {historyTeam?.user?.name} • 📧 {historyTeam?.user?.email}</p>
                               </div>
                               <button
                                 onClick={closeHistoryModal}
-                                className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center hover:bg-white/30"
+                                className="w-9 h-9 sm:w-10 sm:h-10 bg-white/20 text-danger rounded-full flex items-center justify-center hover:bg-white/30 flex-shrink-0"
                               >✕</button>
                             </div>
-                            {/* Modal Content */}
-                            <div className="p-4 sm:p-6">
+                            <div className="p-3 sm:p-6 overflow-y-auto flex-1">
                               {historyLoading ? (
                                 <div className="flex items-center justify-center min-h-[200px]">
                                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -285,18 +277,18 @@ const ViewMemberTeams = () => {
                                           </div>
                                         </div>
                                         {/* Stats Summary */}
-                                        <div className="grid grid-cols-3 gap-4 mb-6">
-                                          <div className="bg-primary-50 rounded-lg p-4 text-center">
-                                            <p className="text-2xl font-bold text-primary-600">{selectedHistoryRound.roundPoints}</p>
-                                            <p className="text-sm text-gray-600">نقاط الجولة</p>
+                                        <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
+                                          <div className="bg-primary-50 rounded-lg p-2 sm:p-4 text-center">
+                                            <p className="text-lg sm:text-2xl font-bold text-primary-600">{selectedHistoryRound.roundPoints}</p>
+                                            <p className="text-xs sm:text-sm text-gray-600">نقاط الجولة</p>
                                           </div>
-                                          <div className="bg-yellow-50 rounded-lg p-4 text-center">
-                                            <p className="text-2xl font-bold text-yellow-600">#{selectedHistoryRound.rank || '-'}</p>
-                                            <p className="text-sm text-gray-600">ترتيب الجولة</p>
+                                          <div className="bg-yellow-50 rounded-lg p-2 sm:p-4 text-center">
+                                            <p className="text-lg sm:text-2xl font-bold text-yellow-600">#{selectedHistoryRound.rank || '-'}</p>
+                                            <p className="text-xs sm:text-sm text-gray-600">ترتيب الجولة</p>
                                           </div>
-                                          <div className="bg-gray-50 rounded-lg p-4 text-center">
-                                            <p className="text-2xl font-bold text-gray-600">{selectedHistoryRound.totalTeams}</p>
-                                            <p className="text-sm text-gray-600">إجمالي الفرق</p>
+                                          <div className="bg-gray-50 rounded-lg p-2 sm:p-4 text-center">
+                                            <p className="text-lg sm:text-2xl font-bold text-gray-600">{selectedHistoryRound.totalTeams}</p>
+                                            <p className="text-xs sm:text-sm text-gray-600">إجمالي الفرق</p>
                                           </div>
                                         </div>
                                         {/* Lineup */}

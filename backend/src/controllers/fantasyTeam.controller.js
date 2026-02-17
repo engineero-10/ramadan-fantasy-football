@@ -114,7 +114,27 @@ const createFantasyTeam = async (req, res, next) => {
       );
     }
 
-    // Create fantasy team
+    // جلب الجولة الحالية لهذا الدوري
+    const currentRound = await prisma.round.findFirst({
+      where: {
+        leagueId: parseInt(leagueId),
+        OR: [
+          { transfersOpen: true, isCompleted: false },
+          { startDate: { lte: new Date() }, endDate: { gte: new Date() }, isCompleted: false },
+          { startDate: { gt: new Date() }, isCompleted: false }
+        ]
+      },
+      orderBy: [
+        { transfersOpen: 'desc' },
+        { startDate: 'asc' }
+      ]
+    });
+
+    if (!currentRound) {
+      return res.status(400).json(formatResponse('error', 'لا توجد جولة حالية متاحة في هذا الدوري'));
+    }
+
+    // إنشاء الفريق الفانتازي
     const fantasyTeam = await prisma.fantasyTeam.create({
       data: {
         name,
@@ -127,7 +147,8 @@ const createFantasyTeam = async (req, res, next) => {
             isStarter: p.isStarter,
             position: index
           }))
-        }
+        },
+        // لا تنشئ أي PointsHistory هنا، سيتم إنشاؤها فقط للجولة الحالية بالأسفل
       },
       include: {
         players: {
@@ -139,6 +160,15 @@ const createFantasyTeam = async (req, res, next) => {
             }
           }
         }
+      }
+    });
+
+    // إنشاء سجل PointsHistory للجولة الحالية فقط بنقاط 0
+    await prisma.pointsHistory.create({
+      data: {
+        fantasyTeamId: fantasyTeam.id,
+        roundId: currentRound.id,
+        points: 0
       }
     });
 

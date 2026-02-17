@@ -347,7 +347,7 @@ const ManageLeagues = () => {
             </div>
             
             {membersLoading ? (
-              <div className="text-center py-8 sm=py-12">
+              <div className="text-center py-8 sm:py-12">
                 <div className="animate-spin text-3xl sm:text-4xl">⚙️</div>
                 <p className="text-gray-600 mt-2 text-sm">جاري التحميل...</p>
               </div>

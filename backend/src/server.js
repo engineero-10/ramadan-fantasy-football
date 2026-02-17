@@ -23,6 +23,8 @@ const adminManagementRoutes = require('./routes/adminManagement.routes');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
+const { cacheMiddleware } = require('./middleware/cache');
+const { optionalAuth } = require('./middleware/auth');
 
 const app = express();
 
@@ -50,6 +52,11 @@ if (process.env.NODE_ENV !== 'test') {
 // Body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Optional auth for /api (sets req.user when token present) so cache can key by user
+app.use('/api', optionalAuth);
+// Response cache for GET requests (60s TTL, per-user key)
+app.use('/api', cacheMiddleware);
 
 // ==================== ROUTES ====================
 

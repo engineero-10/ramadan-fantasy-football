@@ -290,12 +290,12 @@ const MyTeam = () => {
                 {currentRound && (
                   <div className="text-center">
                     <p className="text-3xl font-bold text-yellow-300">{roundPoints?.roundPoints ?? 0}</p>
-                    <p className="text-sm text-white/80">نقاط الجولة</p>
+                    <p className="text-sm text-yellow-300">نقاط الجولة</p>
                   </div>
                 )}
                 <div className="text-center">
                   <p className="text-3xl font-bold text-green-300">{parseFloat(fantasyTeam.budget || 0).toFixed(1)}$</p>
-                  <p className="text-sm text-white/80">الميزانية</p>
+                  <p className="text-sm text-green-300">الميزانية</p>
                 </div>
               </div>
             </div>

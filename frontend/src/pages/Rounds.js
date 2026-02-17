@@ -183,8 +183,8 @@ const Rounds = () => {
             <p className="text-sm text-white/80">{fantasyTeam?.league?.name}</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl sm:text-3xl font-bold">{rounds.length}</p>
-            <p className="text-xs sm:text-sm text-white/80">جولة</p>
+            <p className="text-2xl sm:text-3xl font-bold text-primary">{rounds.length}</p>
+            <p className="text-xs sm:text-sm text-white/80 text-primary">جولة</p>
           </div>
         </div>
       </div>
