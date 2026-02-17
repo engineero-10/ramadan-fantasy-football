@@ -248,11 +248,11 @@ const updateMatch = async (req, res, next) => {
     }
 
     const updateData = {};
-    if (homeTeamId) updateData.homeTeamId = parseInt(homeTeamId);
-    if (awayTeamId) updateData.awayTeamId = parseInt(awayTeamId);
-    if (roundId) updateData.roundId = parseInt(roundId);
+    if (homeTeamId != null) updateData.homeTeam = { connect: { id: parseInt(homeTeamId) } };
+    if (awayTeamId != null) updateData.awayTeam = { connect: { id: parseInt(awayTeamId) } };
+    if (roundId != null) updateData.round = { connect: { id: parseInt(roundId) } };
     if (matchDate) updateData.matchDate = new Date(matchDate);
-    if (location !== undefined) updateData.location = location;
+    if (location !== undefined) updateData.location = location || null;
 
     const updatedMatch = await prisma.match.update({
       where: { id: parseInt(id) },

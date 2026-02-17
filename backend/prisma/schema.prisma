@@ -176,6 +176,7 @@ model Match {
   awayTeamId      Int
   roundId         Int
   matchDate       DateTime
+  location        String?
   homeScore       Int?
   awayScore       Int?
   status          MatchStatus @default(SCHEDULED)
