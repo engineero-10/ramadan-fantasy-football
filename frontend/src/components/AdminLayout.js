@@ -32,15 +32,15 @@ const AdminLayout = () => {
   }, [location.pathname]);
 
   const pageTitle =
-    location.pathname === '/admin' && 'لوحة التحكم' ||
-    location.pathname === '/admin/admins' && 'إدارة العملاء' ||
-    location.pathname === '/admin/leagues' && 'إدارة الدوريات' ||
-    location.pathname === '/admin/member-teams' && 'فرق الأعضاء' ||
-    location.pathname.includes('/admin/teams') && 'إدارة الفرق' ||
-    location.pathname.includes('/admin/players') && 'إدارة اللاعبين' ||
-    location.pathname.includes('/admin/rounds') && 'إدارة الجولات' ||
-    location.pathname.includes('/admin/matches') && 'إدارة المباريات' ||
-    location.pathname.includes('/admin/match-stats') && 'إحصائيات المباراة' ||
+    (location.pathname === '/admin' && 'لوحة التحكم') ||
+    (location.pathname === '/admin/admins' && 'إدارة العملاء') ||
+    (location.pathname === '/admin/leagues' && 'إدارة الدوريات') ||
+    (location.pathname === '/admin/member-teams' && 'فرق الأعضاء') ||
+    (location.pathname.includes('/admin/teams') && 'إدارة الفرق') ||
+    (location.pathname.includes('/admin/players') && 'إدارة اللاعبين') ||
+    (location.pathname.includes('/admin/rounds') && 'إدارة الجولات') ||
+    (location.pathname.includes('/admin/matches') && 'إدارة المباريات') ||
+    (location.pathname.includes('/admin/match-stats') && 'إحصائيات المباراة') ||
     'لوحة التحكم';
 
   return (
