@@ -53,10 +53,8 @@ if (process.env.NODE_ENV !== 'test') {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Optional auth for /api (sets req.user when token present) so cache can key by user
+// Optional auth for /api (sets req.user when token present)
 app.use('/api', optionalAuth);
-// Response cache for GET requests (60s TTL, per-user key)
-app.use('/api', cacheMiddleware);
 
 // ==================== ROUTES ====================
 
