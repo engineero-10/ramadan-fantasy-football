@@ -114,22 +114,14 @@ const createFantasyTeam = async (req, res, next) => {
       );
     }
 
-    // جلب الجولة الحالية لهذا الدوري
-    const currentRound = await prisma.round.findFirst({
-      where: {
-        leagueId: parseInt(leagueId),
-        OR: [
-          { transfersOpen: true, isCompleted: false },
-          { startDate: { lte: new Date() }, endDate: { gte: new Date() }, isCompleted: false },
-          { startDate: { gt: new Date() }, isCompleted: false }
-        ]
-      },
-      orderBy: [
-        { transfersOpen: 'desc' },
-        { startDate: 'asc' }
-      ]
+    // جلب كل الجولات لهذا الدوري مرتبة
+    const allRounds = await prisma.round.findMany({
+      where: { leagueId: parseInt(leagueId) },
+      orderBy: { roundNumber: 'asc' }
     });
 
+    // تحديد الجولة الحالية (أول جولة غير مكتملة)
+    const currentRound = allRounds.find(r => !r.isCompleted);
     if (!currentRound) {
       return res.status(400).json(formatResponse('error', 'لا توجد جولة حالية متاحة في هذا الدوري'));
     }
@@ -148,7 +140,6 @@ const createFantasyTeam = async (req, res, next) => {
             position: index
           }))
         },
-        // لا تنشئ أي PointsHistory هنا، سيتم إنشاؤها فقط للجولة الحالية بالأسفل
       },
       include: {
         players: {
@@ -163,6 +154,17 @@ const createFantasyTeam = async (req, res, next) => {
       }
     });
 
+    // إنشاء سجلات PointsHistory للجولات السابقة المكتملة بقيمة 0
+    const previousRounds = allRounds.filter(r => r.isCompleted);
+    if (previousRounds.length > 0) {
+      await prisma.pointsHistory.createMany({
+        data: previousRounds.map(r => ({
+          fantasyTeamId: fantasyTeam.id,
+          roundId: r.id,
+          points: 0
+        }))
+      });
+    }
     // إنشاء سجل PointsHistory للجولة الحالية فقط بنقاط 0
     await prisma.pointsHistory.create({
       data: {
@@ -278,7 +280,7 @@ const getMyFantasyTeam = async (req, res, next) => {
     };
 
     let fantasyTeam;
-    
+
     // If leagueId is provided and valid, find specific team
     if (leagueId && leagueId !== 'undefined' && leagueId !== 'my') {
       fantasyTeam = await prisma.fantasyTeam.findUnique({
@@ -559,14 +561,14 @@ const getRoundPoints = async (req, res, next) => {
     const playerBreakdown = fantasyTeam.players.map(fp => {
       const stats = fp.player.matchStats[0] || null;
       const basePoints = stats ? stats.points : 0;
-      
+
       // تطبيق مضاعف الكابتن
       let multiplier = 1;
       if (fp.captainType === 'CAPTAIN') multiplier = 2;
       else if (fp.captainType === 'TRIPLE_CAPTAIN') multiplier = 3;
-      
+
       const finalPoints = basePoints * multiplier;
-      
+
       return {
         playerId: fp.player.id,
         playerName: fp.player.name,
@@ -708,11 +710,11 @@ const setCaptain = async (req, res, next) => {
     const captainName = captainPlayer ? captainPlayer.player.name : null;
     const captainTypeLabel = captainType === 'TRIPLE_CAPTAIN' ? 'تريبل كابتن' : 'كابتن';
 
-    res.json(formatResponse('success', 
-      captainType === 'NONE' 
-        ? 'تم إزالة الكابتن' 
-        : `تم تعيين ${captainName} ${captainTypeLabel}`, 
-      { 
+    res.json(formatResponse('success',
+      captainType === 'NONE'
+        ? 'تم إزالة الكابتن'
+        : `تم تعيين ${captainName} ${captainTypeLabel}`,
+      {
         fantasyTeam: updatedTeam,
         tripleCaptainUsed: updatedTeam.tripleCaptainUsed
       }
@@ -778,7 +780,7 @@ const getRoundHistory = async (req, res, next) => {
     const history = await Promise.all(rounds.map(async (round) => {
       // Check if we have points history (completed round)
       const pointsRecord = pointsHistoryRecords.find(ph => ph.roundId === round.id);
-      
+
       let roundPoints = 0;
       let rank = null;
       let lineup = [];
@@ -791,7 +793,7 @@ const getRoundHistory = async (req, res, next) => {
 
       // Get match stats for starters in this round
       const playersWithStats = await prisma.fantasyPlayer.findMany({
-        where: { 
+        where: {
           fantasyTeamId: parseInt(id),
           isStarter: true
         },
@@ -875,7 +877,7 @@ const getRoundHistory = async (req, res, next) => {
         let multiplier = 1;
         if (fp.captainType === 'CAPTAIN') multiplier = 2;
         else if (fp.captainType === 'TRIPLE_CAPTAIN') multiplier = 3;
-        
+
         return {
           playerId: fp.player.id,
           playerName: fp.player.name,

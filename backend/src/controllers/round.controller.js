@@ -32,7 +32,7 @@ const createRound = async (req, res, next) => {
     }
 
     // Calculate lock time (2 hours before start if not provided)
-    const calculatedLockTime = lockTime 
+    const calculatedLockTime = lockTime
       ? new Date(lockTime)
       : new Date(new Date(startDate).getTime() - 2 * 60 * 60 * 1000);
 
@@ -216,8 +216,8 @@ const toggleTransfers = async (req, res, next) => {
       data: { transfersOpen }
     });
 
-    const message = transfersOpen 
-      ? 'تم فتح الانتقالات للجولة' 
+    const message = transfersOpen
+      ? 'تم فتح الانتقالات للجولة'
       : 'تم إغلاق الانتقالات للجولة';
 
     res.json(formatResponse('success', message, { round: updatedRound }));
@@ -337,7 +337,7 @@ const completeRound = async (req, res, next) => {
     // Mark round as completed
     const updatedRound = await prisma.round.update({
       where: { id: parseInt(id) },
-      data: { 
+      data: {
         isCompleted: true,
         transfersOpen: true // Open transfers after round completion
       }

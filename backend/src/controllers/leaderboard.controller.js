@@ -259,20 +259,20 @@ const getLeagueStats = async (req, res, next) => {
       prisma.fantasyTeam.count({
         where: { leagueId: parseInt(leagueId) }
       }),
-      
+
       // Total transfers
       prisma.transfer.count({
         where: {
           fantasyTeam: { leagueId: parseInt(leagueId) }
         }
       }),
-      
+
       // Average points
       prisma.fantasyTeam.aggregate({
         where: { leagueId: parseInt(leagueId) },
         _avg: { totalPoints: true }
       }),
-      
+
       // Top team (leader)
       prisma.fantasyTeam.findFirst({
         where: { leagueId: parseInt(leagueId) },
@@ -281,7 +281,7 @@ const getLeagueStats = async (req, res, next) => {
           user: { select: { id: true, name: true } }
         }
       }),
-      
+
       // Highest round points
       prisma.pointsHistory.findFirst({
         where: {
@@ -293,7 +293,7 @@ const getLeagueStats = async (req, res, next) => {
           round: { select: { id: true, name: true } }
         }
       }),
-      
+
       // Top scoring player
       prisma.player.findMany({
         where: { leagueId: parseInt(leagueId) },
@@ -302,7 +302,7 @@ const getLeagueStats = async (req, res, next) => {
           matchStats: true
         }
       }),
-      
+
       // Most transferred in player (count transfers in)
       prisma.transfer.groupBy({
         by: ['playerInId'],
@@ -420,13 +420,13 @@ const getHeadToHead = async (req, res, next) => {
         if (ph1.points > ph2.points) team1Wins++;
         else if (ph2.points > ph1.points) team2Wins++;
         else draws++;
-        
+
         return {
           round: ph1.round,
           team1Points: ph1.points,
           team2Points: ph2.points,
-          winner: ph1.points > ph2.points ? team1.name : 
-                  ph2.points > ph1.points ? team2.name : 'تعادل'
+          winner: ph1.points > ph2.points ? team1.name :
+            ph2.points > ph1.points ? team2.name : 'تعادل'
         };
       }
       return null;
