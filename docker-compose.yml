@@ -1,4 +1,4 @@
-# Docker Compose for Ramadan Fantasy Football
+# Docker Compose for Ramadan Fantasy Football - Development
 version: '3.8'
 
 services:
@@ -19,10 +19,11 @@ services:
     networks:
       - fantasy-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
 
   # Backend API
   backend:
@@ -37,6 +38,7 @@ services:
       DATABASE_URL: mysql://${MYSQL_USER:-fantasy_user}:${MYSQL_PASSWORD:-fantasy_password}@mysql:3306/ramadan_fantasy
       JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost}
     ports:
       - "5000:5000"
     depends_on:
@@ -49,6 +51,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
   # Frontend
   frontend:
@@ -60,11 +63,17 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - fantasy-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  # Prisma Studio (Development only - remove in production)
+  # Prisma Studio (Development only - activate with: docker compose --profile dev up)
   prisma-studio:
     build:
       context: ./backend

@@ -1,9 +1,10 @@
-# Dependencies
+# Dependencies (will be installed in container)
 node_modules
 
-# Environment
+# Environment files (injected at runtime via docker-compose)
 .env
 .env.local
+.env.*.local
 
 # Logs
 *.log
@@ -17,9 +18,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 
-# Test
+# Test files (not needed in production image)
 coverage
-*.test.js
+__tests__
 
-# Prisma migrations (copy separately if needed)
-prisma/migrations
+# Development scripts
+docs
